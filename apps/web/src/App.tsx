@@ -9,6 +9,7 @@ export function App() {
           <p>You may now add components and start building.</p>
           <p>We&apos;ve already added the button component for you.</p>
           <Button className="mt-2">Button</Button>
+          
         </div>
         <div className="text-muted-foreground font-mono text-xs">
           (Press <kbd>d</kbd> to toggle dark mode)

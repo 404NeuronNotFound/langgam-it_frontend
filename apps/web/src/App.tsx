@@ -1,5 +1,4 @@
 // App.tsx
-// Root of the app — sets up routing and hydrates auth state on boot.
 
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -7,26 +6,19 @@ import { useAuthStore } from "./store/authStore";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
-// ── Protected route wrapper ───────────────────────────────────────
-// Redirects to /login if the user is not authenticated.
-
+// ── Protected route — kick unauthenticated to "/" ─────────────────
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 }
 
-// ── Public route wrapper ──────────────────────────────────────────
-// Redirects to /dashboard if user is already logged in
-// (prevents logged-in users from seeing the login/register pages).
-
+// ── Public route — kick authenticated to /dashboard ───────────────
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
 
 // ── Placeholder dashboard ─────────────────────────────────────────
-// Replace this with your real Dashboard page when ready.
-
 function DashboardPlaceholder() {
   const { user, logout } = useAuthStore();
   return (
@@ -41,11 +33,9 @@ function DashboardPlaceholder() {
 }
 
 // ── App ───────────────────────────────────────────────────────────
-
 export default function App() {
   const hydrateUser = useAuthStore((s) => s.hydrateUser);
 
-  // On app boot, validate the stored token and refresh user data
   useEffect(() => {
     hydrateUser();
   }, [hydrateUser]);
@@ -53,18 +43,15 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* "/" is LoginPage — the main entry point */}
+        <Route path="/"          element={<PublicRoute><LoginPage /></PublicRoute>} />
+        <Route path="/register"  element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
-        {/* Public routes */}
-        <Route path="/login"    element={<PublicRoute><LoginPage /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-
-        {/* Protected routes */}
+        {/* Protected */}
         <Route path="/dashboard" element={<PrivateRoute><DashboardPlaceholder /></PrivateRoute>} />
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Anything else → back to login */}
+        <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

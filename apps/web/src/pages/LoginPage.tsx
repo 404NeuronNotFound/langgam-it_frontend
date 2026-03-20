@@ -4,15 +4,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
-// ------------------------------------------------------------------
-// Langgam-It — Login Page (connected to backend)
-// ------------------------------------------------------------------
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
   // ── Store ────────────────────────────────────────────────────────
-  const { login, isLoading, isAuthenticated, error, clearError } =
+  const { login, isLoading, error, clearError } =
     useAuthStore();
 
   // ── Local form state ─────────────────────────────────────────────
@@ -22,9 +19,9 @@ export default function LoginPage() {
   const [remember, setRemember] = useState<boolean>(false);
 
   // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true });
-  }, [isAuthenticated, navigate]);
+  // useEffect(() => {
+  //   if (isAuthenticated) navigate("/dashboard", { replace: true });
+  // }, [isAuthenticated, navigate]);
 
   // Clear any lingering store error when the user starts typing again
   useEffect(() => {
@@ -33,16 +30,16 @@ export default function LoginPage() {
   }, [username, password]);
 
   // ── Submit ────────────────────────────────────────────────────────
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault();
-    if (!username.trim() || !password) return;
-    try {
-      await login({ username: username.trim(), password });
-      // navigation happens inside the useEffect above after isAuthenticated flips
-    } catch {
-      // error is already set in the store — nothing extra needed here
-    }
+async function handleSignIn(e: React.FormEvent) {
+  e.preventDefault();
+  if (!username.trim() || !password) return;
+  try {
+    await login({ username: username.trim(), password });
+    navigate("/dashboard", { replace: true }); // ← add this line
+  } catch {
+    // error already set in store
   }
+}
 
   return (
     <>

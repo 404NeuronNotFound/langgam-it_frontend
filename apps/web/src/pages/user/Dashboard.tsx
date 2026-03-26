@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuthStore } from "../../store/authStore";
+import { useFinanceStore } from "../../store/financeStore";
 import NetWorthChart from "../../components/NetWorthChart";
 
 // ------------------------------------------------------------------
@@ -9,30 +11,45 @@ import NetWorthChart from "../../components/NetWorthChart";
 // Design tokens match the full Langgam-It system
 // ------------------------------------------------------------------
 
-// Placeholder data — replace with real API data in Phase 2 backend
-const PLACEHOLDER_PROFILE = {
-  net_worth: 0,
-  emergency_fund: 0,
-  savings: 0,
-  investments: 0,
-  rigs_fund: 0,
-  cash_on_hand: 0,
-};
-
-const PLACEHOLDER_HISTORY: { month: string; net_worth: number }[] = [];
-
 export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
+  const { profile, snapshots, fetchProfile, fetchSnapshots } = useFinanceStore();
 
-  const profile = PLACEHOLDER_PROFILE;
-  const history = PLACEHOLDER_HISTORY;
+  useEffect(() => {
+    fetchProfile();
+    fetchSnapshots();
+  }, [fetchProfile, fetchSnapshots]);
 
   const firstName = user?.first_name || user?.username || "there";
 
-  function formatPHP(val: number) {
+  // Calculate net worth from latest snapshot
+  const latestSnapshot = snapshots[0];
+  const netWorth = latestSnapshot ? parseFloat(latestSnapshot.net_worth) : 0;
+
+  // Get bucket data from profile
+  const bucketData = {
+    emergency_fund: profile ? parseFloat(profile.emergency_fund) : 0,
+    savings: profile ? parseFloat(profile.savings) : 0,
+    investments_total: profile ? parseFloat(profile.investments_total) : 0,
+    rigs_fund: profile ? parseFloat(profile.rigs_fund) : 0,
+    cash_on_hand: profile ? parseFloat(profile.cash_on_hand) : 0,
+  };
+
+  // Transform snapshots for chart
+  const history = snapshots.map((s) => ({
+    month: new Date(s.snapshot_date).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    }),
+    net_worth: parseFloat(s.net_worth),
+  })).reverse();
+
+  const currency = profile?.currency || "PHP";
+
+  function formatCurrency(val: number) {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
-      currency: "PHP",
+      currency,
       minimumFractionDigits: 2,
     }).format(val);
   }
@@ -41,7 +58,7 @@ export default function Dashboard() {
     {
       key: "emergency_fund",
       label: "Emergency fund",
-      value: profile.emergency_fund,
+      value: bucketData.emergency_fund,
       target: 10000,
       showTarget: true,
       iconBg: "var(--green-bg)",
@@ -51,7 +68,7 @@ export default function Dashboard() {
     {
       key: "savings",
       label: "Savings",
-      value: profile.savings,
+      value: bucketData.savings,
       target: null,
       showTarget: false,
       iconBg: "var(--blue-bg)",
@@ -59,9 +76,9 @@ export default function Dashboard() {
       icon: "piggy",
     },
     {
-      key: "investments",
+      key: "investments_total",
       label: "Investments",
-      value: profile.investments,
+      value: bucketData.investments_total,
       target: null,
       showTarget: false,
       iconBg: "var(--purple-bg)",
@@ -71,7 +88,7 @@ export default function Dashboard() {
     {
       key: "rigs_fund",
       label: "Rigs fund",
-      value: profile.rigs_fund,
+      value: bucketData.rigs_fund,
       target: 10000,
       showTarget: true,
       iconBg: "var(--amber-bg)",
@@ -80,8 +97,8 @@ export default function Dashboard() {
     },
   ];
 
-  const emergencyPct = Math.min((profile.emergency_fund / 10000) * 100, 100);
-  const rigsPct      = Math.min((profile.rigs_fund / 10000) * 100, 100);
+  const emergencyPct = Math.min((bucketData.emergency_fund / 10000) * 100, 100);
+  const rigsPct      = Math.min((bucketData.rigs_fund / 10000) * 100, 100);
 
   return (
     <>
@@ -106,15 +123,17 @@ export default function Dashboard() {
         <div className="db-networth-card">
           <div className="db-networth-left">
             <p className="db-networth-label">Total net worth</p>
-            <p className="db-networth-value">{formatPHP(profile.net_worth)}</p>
+            <p className="db-networth-value">{formatCurrency(netWorth)}</p>
             <p className="db-networth-sub">
-              emergency fund + savings + investments + rigs fund + cash on hand
+              {latestSnapshot 
+                ? "emergency fund + savings + investments + rigs fund + cash on hand"
+                : "No snapshots yet. Complete setup wizard to get started."}
             </p>
           </div>
           <div className="db-networth-right">
             <div className="db-cash-pill">
               <span className="db-cash-pill-label">Cash on hand</span>
-              <span className="db-cash-pill-value">{formatPHP(profile.cash_on_hand)}</span>
+              <span className="db-cash-pill-value">{formatCurrency(bucketData.cash_on_hand)}</span>
             </div>
           </div>
         </div>
@@ -133,7 +152,7 @@ export default function Dashboard() {
                   </div>
                   <span className="db-bucket-label">{b.label}</span>
                 </div>
-                <p className="db-bucket-value">{formatPHP(b.value)}</p>
+                <p className="db-bucket-value">{formatCurrency(b.value)}</p>
                 {b.showTarget && pct !== null && (
                   <>
                     <div className="db-bucket-bar-track">
@@ -143,7 +162,7 @@ export default function Dashboard() {
                       />
                     </div>
                     <p className="db-bucket-target">
-                      {pct.toFixed(0)}% of {formatPHP(b.target!)} target
+                      {pct.toFixed(0)}% of {formatCurrency(b.target!)} target
                     </p>
                   </>
                 )}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { useFinanceStore } from "../../store/financeStore";
 
 // ------------------------------------------------------------------
 // Langgam-It — Setup Wizard
@@ -13,7 +14,7 @@ import { useAuthStore } from "../../store/authStore";
 interface SetupForm {
   emergency_fund: string;
   savings: string;
-  investments: string;
+  investments_total: string;
   rigs_fund: string;
   cash_on_hand: string;
 }
@@ -21,7 +22,7 @@ interface SetupForm {
 interface SetupErrors {
   emergency_fund?: string;
   savings?: string;
-  investments?: string;
+  investments_total?: string;
   rigs_fund?: string;
   cash_on_hand?: string;
 }
@@ -33,7 +34,7 @@ const FIELDS: {
   placeholder: string;
   iconColor: string;
   iconBg: string;
-  icon: string; // which icon variant
+  icon: string;
 }[] = [
   {
     key: "emergency_fund",
@@ -54,7 +55,7 @@ const FIELDS: {
     icon: "piggy",
   },
   {
-    key: "investments",
+    key: "investments_total",
     label: "Investments",
     description: "Stocks, crypto, mutual funds, etc.",
     placeholder: "0.00",
@@ -85,11 +86,12 @@ const FIELDS: {
 export default function SetupWizard() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { updateProfile } = useFinanceStore();
 
   const [form, setForm] = useState<SetupForm>({
     emergency_fund: "",
     savings: "",
-    investments: "",
+    investments_total: "",
     rigs_fund: "",
     cash_on_hand: "",
   });
@@ -135,15 +137,30 @@ export default function SetupWizard() {
     }).format(val);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validate()) return;
+    
     setIsLoading(true);
-    // TODO: call POST /api/setup/ here
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    setStep("success");
-    setTimeout(() => navigate("/dashboard"), 2200);
+    try {
+      // Update profile with bucket values (backend creates snapshot automatically)
+      await updateProfile({
+        currency: "PHP",
+        emergency_fund: parseFloat(form.emergency_fund) || 0,
+        savings: parseFloat(form.savings) || 0,
+        investments_total: parseFloat(form.investments_total) || 0,
+        rigs_fund: parseFloat(form.rigs_fund) || 0,
+        cash_on_hand: parseFloat(form.cash_on_hand) || 0,
+      });
+      
+      setStep("success");
+      setTimeout(() => navigate("/dashboard"), 2200);
+    } catch (error) {
+      console.error("Setup failed:", error);
+      setErrors({ emergency_fund: "Setup failed. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   // ── Success screen ────────────────────────────────────────────────
@@ -473,6 +490,15 @@ function ArrowRightIcon() {
 
 function FieldIcon({ name, color }: { name: string; color: string }) {
   const props = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: "1.8", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  
+  if (name === "trending-up") return (
+    <svg {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+  );
+  
+  if (name === "trending-down") return (
+    <svg {...props}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></svg>
+  );
+  
   if (name === "shield") return (
     <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
   );

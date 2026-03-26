@@ -18,6 +18,7 @@ interface FinanceState {
   fetchProfile: () => Promise<void>;
   updateProfile: (data: FinancialProfileUpdate) => Promise<void>;
   fetchSnapshots: () => Promise<void>;
+  isSetupComplete: () => boolean;
   reset: () => void;
 }
 
@@ -56,6 +57,21 @@ export const useFinanceStore = create<FinanceState>((set) => ({
     } catch (error: any) {
       set({ error: error.message || "Failed to fetch snapshots", isLoading: false });
     }
+  },
+
+  isSetupComplete: () => {
+    const { profile } = useFinanceStore.getState();
+    if (!profile) return false;
+    
+    // Check if any bucket has a value > 0
+    const hasValues = 
+      parseFloat(profile.emergency_fund) > 0 ||
+      parseFloat(profile.savings) > 0 ||
+      parseFloat(profile.rigs_fund) > 0 ||
+      parseFloat(profile.cash_on_hand) > 0 ||
+      parseFloat(profile.investments_total) > 0;
+    
+    return hasValues;
   },
 
   reset: () => {

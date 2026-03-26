@@ -36,7 +36,7 @@ export default function Dashboard() {
   };
 
   // Transform snapshots for chart
-  const history = snapshots.map((s) => ({
+  const history = snapshots.map((s: { snapshot_date: string | number | Date; net_worth: string; }) => ({
     month: new Date(s.snapshot_date).toLocaleDateString("en-US", {
       month: "short",
       year: "numeric",

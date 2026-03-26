@@ -1,18 +1,73 @@
 // App.tsx
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
+import { useFinanceStore } from "./store/financeStore";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Layout from "./layouts/Layout";
 import SetupWizard from "./pages/user/SetupWizard";
 import Dashboard from "./pages/user/Dashboard";
 
-// ── Protected route ───────────────────────────────────────────────
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+// ── Protected route with setup check ──────────────────────────────
+// Redirects to setup if user hasn't completed it yet
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
+  const { profile, fetchProfile, isSetupComplete } = useFinanceStore();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated && !profile) {
+      fetchProfile().finally(() => setIsChecking(false));
+    } else {
+      setIsChecking(false);
+    }
+  }, [isAuthenticated, profile, fetchProfile]);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (isChecking) {
+    return <div style={{ fontFamily: "system-ui", padding: "2rem" }}>Loading...</div>;
+  }
+
+  if (!isSetupComplete()) {
+    return <Navigate to="/setup" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// ── Setup route ───────────────────────────────────────────────────
+// Redirects to dashboard if setup is already complete
+function SetupRoute({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { profile, fetchProfile, isSetupComplete } = useFinanceStore();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated && !profile) {
+      fetchProfile().finally(() => setIsChecking(false));
+    } else {
+      setIsChecking(false);
+    }
+  }, [isAuthenticated, profile, fetchProfile]);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (isChecking) {
+    return <div style={{ fontFamily: "system-ui", padding: "2rem" }}>Loading...</div>;
+  }
+
+  if (isSetupComplete()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 // ── Public route ──────────────────────────────────────────────────
@@ -45,22 +100,22 @@ export default function App() {
         <Route path="/"         element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
-        {/* Setup wizard — protected but outside Layout (full-screen) */}
+        {/* Setup wizard — protected, redirects to dashboard if already complete */}
         <Route
           path="/setup"
           element={
-            <PrivateRoute>
+            <SetupRoute>
               <SetupWizard />
-            </PrivateRoute>
+            </SetupRoute>
           }
         />
 
-        {/* Protected — all inside Layout (sidebar) */}
+        {/* Protected — all inside Layout (sidebar), redirects to setup if incomplete */}
         <Route
           element={
-            <PrivateRoute>
+            <ProtectedRoute>
               <Layout />
-            </PrivateRoute>
+            </ProtectedRoute>
           }
         >
           <Route path="/dashboard"   element={<Dashboard />} />

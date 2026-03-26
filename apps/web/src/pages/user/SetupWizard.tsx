@@ -86,7 +86,7 @@ const FIELDS: {
 export default function SetupWizard() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const { updateProfile } = useFinanceStore();
+  const { updateProfile, fetchProfile } = useFinanceStore();
 
   const [form, setForm] = useState<SetupForm>({
     emergency_fund: "",
@@ -152,6 +152,9 @@ export default function SetupWizard() {
         rigs_fund: parseFloat(form.rigs_fund) || 0,
         cash_on_hand: parseFloat(form.cash_on_hand) || 0,
       });
+      
+      // Fetch updated profile to ensure setup completion check works
+      await fetchProfile();
       
       setStep("success");
       setTimeout(() => navigate("/dashboard"), 2200);

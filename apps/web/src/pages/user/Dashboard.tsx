@@ -36,13 +36,27 @@ export default function Dashboard() {
   };
 
   // Transform snapshots for chart
-  const history = snapshots.map((s: { snapshot_date: string | number | Date; net_worth: string; }) => ({
-    month: new Date(s.snapshot_date).toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric",
-    }),
-    net_worth: parseFloat(s.net_worth),
-  })).reverse();
+  const history = snapshots.map((s: { snapshot_date: any; net_worth: string; }) => {
+    // Parse the date - handle both ISO format and YYYY-MM-DD format
+    let dateStr = s.snapshot_date;
+    // If it's just YYYY-MM-DD, add time to make it valid ISO
+    if (dateStr && !dateStr.includes('T')) {
+      dateStr = dateStr + 'T00:00:00';
+    }
+    
+    const date = new Date(dateStr);
+    const month = !isNaN(date.getTime()) 
+      ? date.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        })
+      : "Unknown";
+    
+    return {
+      month,
+      net_worth: parseFloat(s.net_worth),
+    };
+  }).reverse();
 
   const currency = profile?.currency || "PHP";
 
@@ -234,7 +248,8 @@ const DASH_STYLES = `
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    max-width: 900px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   /* Greeting */
@@ -356,11 +371,18 @@ const DASH_STYLES = `
     .db-networth-card { padding: 1.25rem; }
     .db-chart-card { padding: 1.25rem; }
   }
+  @media (min-width: 1024px) {
+    .db-root { gap: 1.5rem; }
+    .db-networth-card { padding: 2rem 2.25rem; }
+    .db-chart-card { padding: 2rem 2.25rem; }
+    .db-greeting-title { font-size: 28px; }
+    .db-networth-value { font-size: 42px; }
+  }
+  @media (min-width: 1280px) {
+    .db-buckets { gap: 16px; }
+    .db-bucket-card { padding: 1.375rem 1.5rem; }
+  }
 `;
-
-// ─────────────────────────────────────────────────────────────────────
-// Icons
-// ─────────────────────────────────────────────────────────────────────
 
 function BucketIcon({ name, color }: { name: string; color: string }) {
   const p = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: "1.8", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };

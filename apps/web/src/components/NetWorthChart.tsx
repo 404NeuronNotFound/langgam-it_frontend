@@ -60,8 +60,11 @@ export default function NetWorthChart({ data }: Props) {
     );
   }
 
+  // Responsive height based on screen size
+  const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 280 : 220;
+
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={chartHeight}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid
           strokeDasharray="4 4"
@@ -128,7 +131,7 @@ const tooltipValue: React.CSSProperties = {
 };
 
 const emptyStyle: React.CSSProperties = {
-  height: 220,
+  height: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 280 : 220,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",

@@ -334,7 +334,8 @@ const INCOME_STYLES = `
 
   .income-root {
     font-family: var(--sans);
-    max-width: 700px;
+    max-width: 900px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -684,6 +685,43 @@ const INCOME_STYLES = `
     .income-result-grid {
       grid-template-columns: 1fr;
       gap: 0.75rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .income-root {
+      gap: 1.5rem;
+    }
+    .income-form-card,
+    .income-current-card,
+    .income-result-card,
+    .income-logs-card {
+      padding: 1.75rem 2rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .income-root {
+      max-width: 1000px;
+      gap: 1.75rem;
+    }
+    .income-title {
+      font-size: 28px;
+    }
+    .income-subtitle {
+      font-size: 14px;
+    }
+    .income-form-card,
+    .income-current-card,
+    .income-result-card,
+    .income-logs-card {
+      padding: 2rem 2.25rem;
+    }
+    .income-result-value {
+      font-size: 32px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .income-root {
+      max-width: 1100px;
     }
   }
 `;

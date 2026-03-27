@@ -269,7 +269,8 @@ const BUDGET_STYLES = `
 
   .budget-root {
     font-family: var(--sans);
-    max-width: 800px;
+    max-width: 1000px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -485,6 +486,46 @@ const BUDGET_STYLES = `
     .budget-amounts {
       grid-template-columns: 1fr;
       gap: 0.75rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .budget-root {
+      gap: 1.5rem;
+    }
+    .budget-overview-card,
+    .budget-card,
+    .budget-info-card {
+      padding: 1.75rem 2rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .budget-root {
+      max-width: 1100px;
+      gap: 1.75rem;
+    }
+    .budget-title {
+      font-size: 28px;
+    }
+    .budget-subtitle {
+      font-size: 14px;
+    }
+    .budget-overview-card,
+    .budget-card {
+      padding: 2rem 2.25rem;
+    }
+    .budget-overview-value {
+      font-size: 26px;
+    }
+    .budget-card-title {
+      font-size: 18px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .budget-root {
+      max-width: 1200px;
+    }
+    .budget-amounts {
+      gap: 1.5rem;
     }
   }
 `;

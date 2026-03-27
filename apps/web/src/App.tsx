@@ -9,6 +9,8 @@ import RegisterPage from "./pages/RegisterPage";
 import Layout from "./layouts/Layout";
 import SetupWizard from "./pages/user/SetupWizard";
 import Dashboard from "./pages/user/Dashboard";
+import IncomePage from "./pages/user/IncomePage";
+import BudgetPage from "./pages/user/BudgetPage";
 
 // ── Protected route with setup check ──────────────────────────────
 // Redirects to setup if user hasn't completed it yet
@@ -77,10 +79,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 // ── Placeholder pages ─────────────────────────────────────────────
-function IncomePage()      { return <div style={{ fontFamily: "system-ui" }}><h1>Income</h1></div>; }
 function ExpensesPage()    { return <div style={{ fontFamily: "system-ui" }}><h1>Expenses</h1></div>; }
 function InvestmentsPage() { return <div style={{ fontFamily: "system-ui" }}><h1>Investments</h1></div>; }
-function BudgetPage()      { return <div style={{ fontFamily: "system-ui" }}><h1>Budget</h1></div>; }
 function ReportsPage()     { return <div style={{ fontFamily: "system-ui" }}><h1>Reports</h1></div>; }
 function SettingsPage()    { return <div style={{ fontFamily: "system-ui" }}><h1>Settings</h1></div>; }
 

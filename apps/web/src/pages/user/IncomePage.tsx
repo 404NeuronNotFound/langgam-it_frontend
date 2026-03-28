@@ -35,6 +35,7 @@ export default function IncomePage() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
+    // Allow empty string, 0, and valid decimal numbers
     if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     setIncomeInput(value);
     setError("");
@@ -43,9 +44,9 @@ export default function IncomePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
-    const amount = parseFloat(incomeInput);
-    if (!amount || amount <= 0) {
-      setError("Please enter a valid income amount.");
+    const amount = parseFloat(incomeInput) || 0; // Allow 0 for survival mode
+    if (amount < 0) {
+      setError("Amount cannot be negative.");
       return;
     }
 
@@ -254,7 +255,7 @@ export default function IncomePage() {
                 className={`income-input${error ? " income-input-error" : ""}`}
                 type="text"
                 inputMode="decimal"
-                placeholder="0.00"
+                placeholder="0.00 (enter 0 for survival mode)"
                 value={incomeInput}
                 onChange={handleChange}
                 autoComplete="off"
@@ -274,13 +275,13 @@ export default function IncomePage() {
           <button
             type="submit"
             className="income-btn-primary"
-            disabled={isLoading || !incomeInput}
+            disabled={isLoading}
           >
             {isLoading ? <span className="income-spinner" /> : "Submit Income"}
           </button>
 
           <p className="income-hint">
-            The allocation engine will fill your emergency fund, rigs fund, savings, and set your spendable budgets automatically.
+            The allocation engine will fill your emergency fund, rigs fund, savings, and set your spendable budgets automatically. Enter 0 to activate survival mode.
           </p>
         </form>
       </div>

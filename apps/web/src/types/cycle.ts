@@ -35,3 +35,27 @@ export interface AllocationResult {
   logs: AllocationLog[];
   survival_mode: boolean;
 }
+
+// Expense types
+export interface Expense {
+  id: number;
+  cycle: number;
+  amount: string;
+  category: "needs" | "wants";
+  date: string;
+  description: string;
+  created_at: string;
+}
+
+export interface ExpenseSubmission {
+  amount: number;
+  category: "needs" | "wants";
+  date?: string; // Optional, defaults to today
+  description?: string;
+}
+
+export interface DailyLimit {
+  daily_limit: string;
+  remaining_days: number;
+  remaining_budget: string;
+}

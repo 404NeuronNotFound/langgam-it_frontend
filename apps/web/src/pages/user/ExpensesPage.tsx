@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useExpenseStore } from "../../store/expenseStore";
+import { useCycleStore } from "../../store/cycleStore";
+import { useFinanceStore } from "../../store/financeStore";
 
 // ------------------------------------------------------------------
 // Langgam-It — Expenses Page
@@ -8,51 +11,31 @@ import { useState } from "react";
 // Daily limit calculation and budget tracking
 // ------------------------------------------------------------------
 
-// Mock data for demonstration
-const MOCK_CYCLE = {
-  expenses_budget: "15000",
-  wants_budget: "5000",
-  remaining_budget: "18000",
-};
-
-const MOCK_DAILY_LIMIT = {
-  daily_limit: "900",
-  remaining_days: 20,
-  remaining_budget: "18000",
-};
-
-const MOCK_TODAY_EXPENSES = [
-  {
-    id: 1,
-    amount: "250",
-    category: "needs" as const,
-    description: "Grocery shopping",
-    date: "2024-01-15T10:30:00",
-  },
-  {
-    id: 2,
-    amount: "150",
-    category: "wants" as const,
-    description: "Coffee with friends",
-    date: "2024-01-15T14:20:00",
-  },
-  {
-    id: 3,
-    amount: "500",
-    category: "needs" as const,
-    description: "Electric bill",
-    date: "2024-01-15T16:45:00",
-  },
-];
-
 export default function ExpensesPage() {
+  const { currentCycle, fetchCurrentCycle } = useCycleStore();
+  const { profile } = useFinanceStore();
+  const {
+    todayExpenses,
+    dailyLimit,
+    fetchTodayExpenses,
+    fetchDailyLimit,
+    addExpense,
+    isLoading: storeLoading,
+  } = useExpenseStore();
+
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<"needs" | "wants">("needs");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currency = "PHP";
+  useEffect(() => {
+    fetchCurrentCycle();
+    fetchTodayExpenses();
+    fetchDailyLimit();
+  }, [fetchCurrentCycle, fetchTodayExpenses, fetchDailyLimit]);
+
+  const currency = profile?.currency || "PHP";
 
   function formatCurrency(val: number | string) {
     const num = typeof val === "string" ? parseFloat(val) : val;
@@ -84,26 +67,95 @@ export default function ExpensesPage() {
       return;
     }
 
-    setIsLoading(true);
-    // TODO: Call API to add expense
-    console.log("Adding expense:", { amount: amountNum, category, description });
+    setIsSubmitting(true);
+    setError("");
 
-    // Simulate API call
-    setTimeout(() => {
-      setAmount("");
-      setDescription("");
-      setIsLoading(false);
-    }, 500);
+    addExpense({
+      amount: amountNum,
+      category,
+      description: description.trim(),
+    })
+      .then(() => {
+        setAmount("");
+        setDescription("");
+        setCategory("needs");
+      })
+      .catch((err) => {
+        console.error("Failed to add expense:", err);
+        console.error("Error response data:", err.response?.data);
+        console.error("Error status:", err.response?.status);
+        
+        // Extract error message from backend
+        let errorMsg = "Failed to add expense. ";
+        if (err.response?.data) {
+          const data = err.response.data;
+          if (typeof data === 'string') {
+            errorMsg += data;
+          } else if (data.detail) {
+            errorMsg += data.detail;
+          } else if (data.message) {
+            errorMsg += data.message;
+          } else if (data.error) {
+            errorMsg += data.error;
+          } else {
+            // Show all field errors
+            const fieldErrors = Object.entries(data)
+              .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+              .join('; ');
+            errorMsg += fieldErrors || "Please check your input.";
+          }
+        } else {
+          errorMsg += err.message || "Please try again.";
+        }
+        
+        setError(errorMsg);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   }
 
-  const todayTotal = MOCK_TODAY_EXPENSES.reduce(
+  // Calculate today's total and remaining
+  const todayTotal = todayExpenses.reduce(
     (sum, exp) => sum + parseFloat(exp.amount),
     0
   );
 
-  const dailyLimit = parseFloat(MOCK_DAILY_LIMIT.daily_limit);
-  const remainingToday = dailyLimit - todayTotal;
-  const usagePercent = (todayTotal / dailyLimit) * 100;
+  const dailyLimitAmount = dailyLimit ? parseFloat(dailyLimit.daily_limit) : 0;
+  const remainingToday = dailyLimit 
+    ? parseFloat(dailyLimit.remaining_today)
+    : dailyLimitAmount - todayTotal;
+  const usagePercent = dailyLimitAmount > 0 ? (todayTotal / dailyLimitAmount) * 100 : 0;
+
+  // Show loading state while fetching initial data
+  if (storeLoading && !dailyLimit && todayExpenses.length === 0) {
+    return (
+      <>
+        <style>{EXPENSES_STYLES}</style>
+        <div className="exp-root">
+          <div className="exp-header">
+            <h1 className="exp-title">Expenses</h1>
+            <p className="exp-subtitle">Loading...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show message if no cycle exists
+  if (!currentCycle && !storeLoading) {
+    return (
+      <>
+        <style>{EXPENSES_STYLES}</style>
+        <div className="exp-root">
+          <div className="exp-header">
+            <h1 className="exp-title">Expenses</h1>
+            <p className="exp-subtitle">No active cycle found. Add income to start tracking expenses.</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -121,9 +173,9 @@ export default function ExpensesPage() {
           <div className="exp-daily-header">
             <div>
               <p className="exp-daily-label">Daily Limit</p>
-              <p className="exp-daily-value">{formatCurrency(dailyLimit)}</p>
+              <p className="exp-daily-value">{formatCurrency(dailyLimitAmount)}</p>
               <p className="exp-daily-sub">
-                {MOCK_DAILY_LIMIT.remaining_days} days remaining in cycle
+                {dailyLimit?.remaining_days || 0} days remaining in cycle
               </p>
             </div>
             <div className="exp-daily-remaining">
@@ -181,7 +233,7 @@ export default function ExpensesPage() {
                   value={amount}
                   onChange={handleAmountChange}
                   autoComplete="off"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -196,7 +248,7 @@ export default function ExpensesPage() {
                 className="exp-select"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as "needs" | "wants")}
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 <option value="needs">Needs (Essential)</option>
                 <option value="wants">Wants (Discretionary)</option>
@@ -217,14 +269,14 @@ export default function ExpensesPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               autoComplete="off"
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
           </div>
 
           {error && <span className="exp-error-msg">{error}</span>}
 
-          <button type="submit" className="exp-btn-primary" disabled={isLoading}>
-            {isLoading ? <span className="exp-spinner" /> : "Add Expense"}
+          <button type="submit" className="exp-btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? <span className="exp-spinner" /> : "Add Expense"}
           </button>
         </form>
 
@@ -249,7 +301,7 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          {MOCK_TODAY_EXPENSES.length === 0 ? (
+          {todayExpenses.length === 0 ? (
             <div className="exp-empty">
               <svg
                 width="32"
@@ -271,7 +323,7 @@ export default function ExpensesPage() {
             </div>
           ) : (
             <div className="exp-list">
-              {MOCK_TODAY_EXPENSES.map((expense) => (
+              {todayExpenses.map((expense) => (
                 <div className="exp-item" key={expense.id}>
                   <div className="exp-item-left">
                     <div
@@ -329,19 +381,19 @@ export default function ExpensesPage() {
             <div className="exp-summary-item">
               <span className="exp-summary-label">Expenses Budget</span>
               <span className="exp-summary-value">
-                {formatCurrency(MOCK_CYCLE.expenses_budget)}
+                {formatCurrency(currentCycle?.expenses_budget || "0")}
               </span>
             </div>
             <div className="exp-summary-item">
               <span className="exp-summary-label">Wants Budget</span>
               <span className="exp-summary-value">
-                {formatCurrency(MOCK_CYCLE.wants_budget)}
+                {formatCurrency(currentCycle?.wants_budget || "0")}
               </span>
             </div>
             <div className="exp-summary-item">
               <span className="exp-summary-label">Remaining Budget</span>
               <span className="exp-summary-value exp-summary-value-highlight">
-                {formatCurrency(MOCK_CYCLE.remaining_budget)}
+                {formatCurrency(currentCycle?.remaining_budget || "0")}
               </span>
             </div>
           </div>

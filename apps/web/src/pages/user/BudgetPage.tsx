@@ -1,21 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCycleStore } from "../../store/cycleStore";
+import { useExpenseStore } from "../../store/expenseStore";
 import { useFinanceStore } from "../../store/financeStore";
 
-// ------------------------------------------------------------------
-// Langgam-It — Budget Page
-// Display expenses_budget vs wants_budget with progress bars
-// ------------------------------------------------------------------
-
 export default function BudgetPage() {
-  const { currentCycle, fetchCurrentCycle } = useCycleStore();
+  const { currentCycle, fetchCurrentCycle, resetExpenses } = useCycleStore();
+  const { expenses, fetchExpenses, isLoading } = useExpenseStore();
   const { profile } = useFinanceStore();
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     fetchCurrentCycle();
   }, [fetchCurrentCycle]);
+
+  useEffect(() => {
+    // Fetch all expenses - we'll filter by cycle on frontend
+    fetchExpenses();
+  }, [fetchExpenses]);
 
   const currency = profile?.currency || "PHP";
 
@@ -28,38 +31,82 @@ export default function BudgetPage() {
     }).format(num);
   }
 
-  if (!currentCycle) {
+  async function handleResetExpenses() {
+    setIsResetting(true);
+    try {
+      await resetExpenses();
+      // Refresh expenses after reset
+      await fetchExpenses();
+    } catch (error) {
+      console.error("Failed to reset expenses:", error);
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
+  if (isLoading && !currentCycle) {
     return (
       <>
         <style>{BUDGET_STYLES}</style>
         <div className="budget-root">
           <div className="budget-header">
-            <h1 className="budget-title">Budget</h1>
-            <p className="budget-subtitle">
-              No active cycle found. Add income to start tracking your budget.
-            </p>
+            <h1 className="budget-title">Budget Overview</h1>
+            <p className="budget-subtitle">Loading...</p>
           </div>
         </div>
       </>
     );
   }
 
-  const income = parseFloat(currentCycle.income);
+  if (!currentCycle) {
+    return (
+      <>
+        <style>{BUDGET_STYLES}</style>
+        <div className="budget-root">
+          <div className="budget-header">
+            <h1 className="budget-title">Budget Overview</h1>
+            <p className="budget-subtitle">No active cycle. Add income to start tracking.</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   const expensesBudget = parseFloat(currentCycle.expenses_budget);
   const wantsBudget = parseFloat(currentCycle.wants_budget);
-  const remaining = parseFloat(currentCycle.remaining_budget);
+  const remainingBudget = parseFloat(currentCycle.remaining_budget);
 
-  // Calculate spent (for demo, assuming 0 spent - you can track this separately)
-  const expensesSpent = 0;
-  const wantsSpent = 0;
+  // Filter expenses to only include those from the current cycle
+  const currentCycleExpenses = expenses.filter((e) => e.cycle === currentCycle.id);
 
-  const expensesRemaining = expensesBudget - expensesSpent;
+  console.log("Budget Page - Current Cycle ID:", currentCycle.id);
+  console.log("Budget Page - All Expenses:", expenses);
+  console.log("Budget Page - Current Cycle Expenses:", currentCycleExpenses);
+
+  const needsSpent = currentCycleExpenses
+    .filter((e) => e.category === "needs")
+    .reduce((sum, e) => {
+      const amount = parseFloat(e.amount);
+      return sum + amount;
+    }, 0);
+
+  const wantsSpent = currentCycleExpenses
+    .filter((e) => e.category === "wants")
+    .reduce((sum, e) => {
+      const amount = parseFloat(e.amount);
+      return sum + amount;
+    }, 0);
+
+  console.log("Budget Page - Needs spent (current cycle only):", needsSpent);
+  console.log("Budget Page - Wants spent (current cycle only):", wantsSpent);
+
+  const needsRemaining = expensesBudget - needsSpent;
   const wantsRemaining = wantsBudget - wantsSpent;
 
-  const expensesPct = expensesBudget > 0 ? (expensesSpent / expensesBudget) * 100 : 0;
-  const wantsPct = wantsBudget > 0 ? (wantsSpent / wantsBudget) * 100 : 0;
+  const needsPercentage = expensesBudget > 0 ? (needsSpent / expensesBudget) * 100 : 0;
+  const wantsPercentage = wantsBudget > 0 ? (wantsSpent / wantsBudget) * 100 : 0;
 
-  const cycleMonth = new Date(currentCycle.month + "-01").toLocaleDateString("en-US", {
+  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
@@ -70,151 +117,189 @@ export default function BudgetPage() {
       <div className="budget-root">
         <div className="budget-header">
           <div>
-            <h1 className="budget-title">Budget</h1>
-            <p className="budget-subtitle">Track your spending for {cycleMonth}</p>
-          </div>
-          <span className="budget-status-badge">{currentCycle.status}</span>
-        </div>
-
-        {/* Overview card */}
-        <div className="budget-overview-card">
-          <div className="budget-overview-item">
-            <p className="budget-overview-label">Total Income</p>
-            <p className="budget-overview-value">{formatCurrency(income)}</p>
-          </div>
-          <div className="budget-overview-divider" />
-          <div className="budget-overview-item">
-            <p className="budget-overview-label">Total Budget</p>
-            <p className="budget-overview-value">{formatCurrency(expensesBudget + wantsBudget)}</p>
-          </div>
-          <div className="budget-overview-divider" />
-          <div className="budget-overview-item">
-            <p className="budget-overview-label">Remaining</p>
-            <p className="budget-overview-value budget-overview-value-success">
-              {formatCurrency(remaining)}
-            </p>
+            <h1 className="budget-title">Budget Overview</h1>
+            <p className="budget-subtitle">Track your spending for {monthYear}</p>
           </div>
         </div>
 
-        {/* Expenses budget */}
-        <div className="budget-card">
-          <div className="budget-card-header">
-            <div className="budget-card-icon" style={{ background: "var(--error-bg)" }}>
-              <ExpenseIcon color="var(--error)" />
+        <div className="budget-cards-grid">
+          <div className="budget-card">
+            <div className="budget-card-header">
+              <div className="budget-card-icon" style={{ background: "var(--error-bg)" }}>
+                <NeedsIcon color="var(--error)" />
+              </div>
+              <span className="budget-card-label">Needs Budget</span>
             </div>
-            <div className="budget-card-header-text">
-              <h2 className="budget-card-title">Expenses Budget</h2>
-              <p className="budget-card-subtitle">Essential spending (rent, utilities, food)</p>
+            <div className="budget-card-body">
+              <div className="budget-stat">
+                <span className="budget-stat-label">Allocated</span>
+                <span className="budget-stat-value">{formatCurrency(expensesBudget)}</span>
+              </div>
+              <div className="budget-stat">
+                <span className="budget-stat-label">Spent</span>
+                <span className="budget-stat-value budget-stat-spent">{formatCurrency(needsSpent)}</span>
+              </div>
+              <div className="budget-stat">
+                <span className="budget-stat-label">Remaining</span>
+                <span
+                  className="budget-stat-value"
+                  style={{ color: needsRemaining < 0 ? "var(--error)" : "var(--success)" }}
+                >
+                  {formatCurrency(needsRemaining)}
+                </span>
+              </div>
+            </div>
+            <div className="budget-progress">
+              <div className="budget-progress-header">
+                <span className="budget-progress-label">Usage</span>
+                <span className="budget-progress-percent">{needsPercentage.toFixed(1)}%</span>
+              </div>
+              <div className="budget-progress-bar">
+                <div
+                  className="budget-progress-fill"
+                  style={{
+                    width: `${Math.min(needsPercentage, 100)}%`,
+                    background: needsPercentage > 100 ? "var(--error)" : "var(--error)",
+                  }}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="budget-amounts">
-            <div className="budget-amount-item">
-              <span className="budget-amount-label">Allocated</span>
-              <span className="budget-amount-value">{formatCurrency(expensesBudget)}</span>
+          <div className="budget-card">
+            <div className="budget-card-header">
+              <div className="budget-card-icon" style={{ background: "var(--purple-bg)" }}>
+                <WantsIcon color="var(--purple-icon)" />
+              </div>
+              <span className="budget-card-label">Wants Budget</span>
             </div>
-            <div className="budget-amount-item">
-              <span className="budget-amount-label">Spent</span>
-              <span className="budget-amount-value budget-amount-value-spent">
-                {formatCurrency(expensesSpent)}
-              </span>
+            <div className="budget-card-body">
+              <div className="budget-stat">
+                <span className="budget-stat-label">Allocated</span>
+                <span className="budget-stat-value">{formatCurrency(wantsBudget)}</span>
+              </div>
+              <div className="budget-stat">
+                <span className="budget-stat-label">Spent</span>
+                <span className="budget-stat-value budget-stat-spent">{formatCurrency(wantsSpent)}</span>
+              </div>
+              <div className="budget-stat">
+                <span className="budget-stat-label">Remaining</span>
+                <span
+                  className="budget-stat-value"
+                  style={{ color: wantsRemaining < 0 ? "var(--error)" : "var(--success)" }}
+                >
+                  {formatCurrency(wantsRemaining)}
+                </span>
+              </div>
             </div>
-            <div className="budget-amount-item">
-              <span className="budget-amount-label">Remaining</span>
-              <span className="budget-amount-value budget-amount-value-remaining">
-                {formatCurrency(expensesRemaining)}
-              </span>
+            <div className="budget-progress">
+              <div className="budget-progress-header">
+                <span className="budget-progress-label">Usage</span>
+                <span className="budget-progress-percent">{wantsPercentage.toFixed(1)}%</span>
+              </div>
+              <div className="budget-progress-bar">
+                <div
+                  className="budget-progress-fill"
+                  style={{
+                    width: `${Math.min(wantsPercentage, 100)}%`,
+                    background: wantsPercentage > 100 ? "var(--error)" : "var(--purple-icon)",
+                  }}
+                />
+              </div>
             </div>
-          </div>
-
-          <div className="budget-progress">
-            <div className="budget-progress-bar">
-              <div
-                className="budget-progress-fill budget-progress-fill-expenses"
-                style={{ width: `${Math.min(expensesPct, 100)}%` }}
-              />
-            </div>
-            <p className="budget-progress-text">
-              {expensesPct.toFixed(1)}% used
-            </p>
           </div>
         </div>
 
-        {/* Wants budget */}
-        <div className="budget-card">
-          <div className="budget-card-header">
-            <div className="budget-card-icon" style={{ background: "var(--purple-bg)" }}>
-              <WantIcon color="var(--purple-icon)" />
-            </div>
-            <div className="budget-card-header-text">
-              <h2 className="budget-card-title">Wants Budget</h2>
-              <p className="budget-card-subtitle">Discretionary spending (entertainment, dining out)</p>
-            </div>
-          </div>
-
-          <div className="budget-amounts">
-            <div className="budget-amount-item">
-              <span className="budget-amount-label">Allocated</span>
-              <span className="budget-amount-value">{formatCurrency(wantsBudget)}</span>
-            </div>
-            <div className="budget-amount-item">
-              <span className="budget-amount-label">Spent</span>
-              <span className="budget-amount-value budget-amount-value-spent">
-                {formatCurrency(wantsSpent)}
-              </span>
-            </div>
-            <div className="budget-amount-item">
-              <span className="budget-amount-label">Remaining</span>
-              <span className="budget-amount-value budget-amount-value-remaining">
-                {formatCurrency(wantsRemaining)}
-              </span>
-            </div>
-          </div>
-
-          <div className="budget-progress">
-            <div className="budget-progress-bar">
-              <div
-                className="budget-progress-fill budget-progress-fill-wants"
-                style={{ width: `${Math.min(wantsPct, 100)}%` }}
-              />
-            </div>
-            <p className="budget-progress-text">
-              {wantsPct.toFixed(1)}% used
-            </p>
-          </div>
-        </div>
-
-        {/* Info card */}
-        <div className="budget-info-card">
-          <div className="budget-info-icon">ℹ️</div>
+        <div className="budget-remaining-card">
           <div>
-            <p className="budget-info-title">Budget Allocation</p>
-            <p className="budget-info-text">
-              Your budgets are automatically calculated when you submit income. Expenses budget covers essential needs, while wants budget is for discretionary spending.
-            </p>
+            <p className="budget-remaining-label">Total Remaining Budget</p>
+            <p className="budget-remaining-value">{formatCurrency(remainingBudget)}</p>
+            <p className="budget-remaining-sub">Available for spending this month</p>
           </div>
+        </div>
+
+        <div className="budget-expenses-card">
+          <p className="budget-section-label">Recent Expenses</p>
+          {currentCycleExpenses.length === 0 ? (
+            <div className="budget-empty">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: "var(--text-3)", marginBottom: 8 }}
+              >
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+              <p style={{ fontSize: 13, color: "var(--text-3)" }}>
+                No expenses recorded for this cycle
+              </p>
+            </div>
+          ) : (
+            <div className="budget-expenses-list">
+              {currentCycleExpenses.slice(0, 10).map((expense) => (
+                <div className="budget-expense-item" key={expense.id}>
+                  <div className="budget-expense-left">
+                    <div
+                      className="budget-expense-icon"
+                      style={{
+                        background: expense.category === "needs" ? "var(--error-bg)" : "var(--purple-bg)",
+                      }}
+                    >
+                      {expense.category === "needs" ? (
+                        <NeedsIcon color="var(--error)" />
+                      ) : (
+                        <WantsIcon color="var(--purple-icon)" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="budget-expense-desc">{expense.description || "No description"}</p>
+                      <div className="budget-expense-meta">
+                        <span
+                          className="budget-expense-category"
+                          style={{
+                            color: expense.category === "needs" ? "var(--error)" : "var(--purple-icon)",
+                          }}
+                        >
+                          {expense.category === "needs" ? "Needs" : "Wants"}
+                        </span>
+                        <span className="budget-expense-date">
+                          {new Date(expense.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className="budget-expense-amount">{formatCurrency(expense.amount)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Icons
-// ─────────────────────────────────────────────────────────────────────
-
-function ExpenseIcon({ color }: { color: string }) {
+function NeedsIcon({ color }: { color: string }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
   );
 }
 
-function WantIcon({ color }: { color: string }) {
+function WantsIcon({ color }: { color: string }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <path d="M8 14s1.5 2 4 2 4-2 4-2" />
       <line x1="9" y1="9" x2="9.01" y2="9" />
@@ -222,10 +307,6 @@ function WantIcon({ color }: { color: string }) {
     </svg>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────────────
 
 const BUDGET_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Lora:ital,wght@0,500;1,400&display=swap');
@@ -269,20 +350,19 @@ const BUDGET_STYLES = `
 
   .budget-root {
     font-family: var(--sans);
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
   }
 
-  /* Header */
   .budget-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 0.5rem;
     gap: 1rem;
+    flex-wrap: wrap;
   }
   .budget-title {
     font-family: var(--serif);
@@ -298,131 +378,101 @@ const BUDGET_STYLES = `
     color: var(--text-2);
     line-height: 1.6;
   }
-  .budget-status-badge {
-    font-size: 11px;
+
+  .budget-reset-btn {
+    height: 36px;
+    padding: 0 16px;
+    background: var(--error-bg);
+    color: var(--error);
+    border: 0.5px solid var(--error);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 13px;
     font-weight: 500;
-    padding: 5px 12px;
-    background: var(--success-bg);
-    color: var(--success);
-    border-radius: 99px;
-    text-transform: capitalize;
-    flex-shrink: 0;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .budget-reset-btn:hover { opacity: 0.82; }
+  .budget-reset-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .budget-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
-  /* Overview card */
-  .budget-overview-card {
-    background: var(--bg-card);
-    border: 0.5px solid var(--border-md);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-  .budget-overview-item {
-    flex: 1;
-    text-align: center;
-  }
-  .budget-overview-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    margin-bottom: 6px;
-  }
-  .budget-overview-value {
-    font-family: var(--serif);
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--text-1);
-    letter-spacing: -0.3px;
-  }
-  .budget-overview-value-success {
-    color: var(--success);
-  }
-  .budget-overview-divider {
-    width: 0.5px;
-    height: 40px;
-    background: var(--border);
-  }
-
-  /* Budget card */
   .budget-card {
     background: var(--bg-card);
     border: 0.5px solid var(--border-md);
     border-radius: var(--radius-md);
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
   }
   .budget-card-header {
     display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    margin-bottom: 1.25rem;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
   }
   .budget-card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
-  .budget-card-header-text {
-    flex: 1;
-  }
-  .budget-card-title {
-    font-size: 16px;
-    font-weight: 600;
+  .budget-card-label {
+    font-size: 13px;
+    font-weight: 500;
     color: var(--text-1);
-    margin-bottom: 3px;
-  }
-  .budget-card-subtitle {
-    font-size: 12px;
-    color: var(--text-3);
-    line-height: 1.5;
   }
 
-  /* Amounts */
-  .budget-amounts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 0.5px solid var(--border);
-  }
-  .budget-amount-item {
+  .budget-card-body {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 10px;
+    margin-bottom: 1rem;
   }
-  .budget-amount-label {
+  .budget-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .budget-stat-label {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .budget-stat-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  .budget-stat-spent {
+    color: var(--error);
+  }
+
+  .budget-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .budget-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .budget-progress-label {
     font-size: 11px;
     color: var(--text-3);
   }
-  .budget-amount-value {
-    font-size: 16px;
+  .budget-progress-percent {
+    font-size: 12px;
     font-weight: 600;
-    color: var(--text-1);
-  }
-  .budget-amount-value-spent {
-    color: var(--error);
-  }
-  .budget-amount-value-remaining {
-    color: var(--success);
-  }
-
-  /* Progress */
-  .budget-progress {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    color: var(--text-2);
   }
   .budget-progress-bar {
-    flex: 1;
-    height: 8px;
+    height: 6px;
     background: var(--bg-surface);
     border-radius: 99px;
     overflow: hidden;
@@ -432,100 +482,137 @@ const BUDGET_STYLES = `
     border-radius: 99px;
     transition: width 0.4s ease;
   }
-  .budget-progress-fill-expenses {
-    background: var(--error);
+
+  .budget-remaining-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
   }
-  .budget-progress-fill-wants {
-    background: var(--purple-icon);
+  .budget-remaining-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 8px;
   }
-  .budget-progress-text {
-    font-size: 12px;
+  .budget-remaining-value {
+    font-family: var(--serif);
+    font-size: 32px;
     font-weight: 500;
-    color: var(--text-2);
-    flex-shrink: 0;
-    min-width: 60px;
-    text-align: right;
+    color: var(--success);
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .budget-remaining-sub {
+    font-size: 12px;
+    color: var(--text-3);
   }
 
-  /* Info card */
-  .budget-info-card {
-    background: var(--bg-surface);
-    border: 0.5px solid var(--border);
+  .budget-expenses-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border-md);
     border-radius: var(--radius-md);
-    padding: 1rem 1.25rem;
+    padding: 1.5rem;
+  }
+  .budget-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 1rem;
+  }
+
+  .budget-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .budget-expenses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .budget-expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    gap: 1rem;
+  }
+  .budget-expense-left {
     display: flex;
     gap: 12px;
-    align-items: flex-start;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
   }
-  .budget-info-icon {
-    font-size: 18px;
+  .budget-expense-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
   }
-  .budget-info-title {
-    font-size: 13px;
+  .budget-expense-desc {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-1);
+    margin-bottom: 4px;
+  }
+  .budget-expense-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 11px;
+  }
+  .budget-expense-category {
+    font-weight: 500;
+  }
+  .budget-expense-date {
+    color: var(--text-3);
+  }
+  .budget-expense-amount {
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-1);
-    margin-bottom: 3px;
-  }
-  .budget-info-text {
-    font-size: 12px;
-    color: var(--text-2);
-    line-height: 1.6;
+    flex-shrink: 0;
   }
 
-  /* Responsive */
-  @media (max-width: 640px) {
-    .budget-overview-card {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .budget-overview-divider {
-      width: 100%;
-      height: 0.5px;
-    }
-    .budget-amounts {
+  @media (max-width: 768px) {
+    .budget-cards-grid {
       grid-template-columns: 1fr;
-      gap: 0.75rem;
     }
-  }
-  @media (min-width: 768px) {
-    .budget-root {
-      gap: 1.5rem;
-    }
-    .budget-overview-card,
-    .budget-card,
-    .budget-info-card {
-      padding: 1.75rem 2rem;
+    .budget-title {
+      font-size: 20px;
     }
   }
   @media (min-width: 1024px) {
     .budget-root {
-      max-width: 1100px;
-      gap: 1.75rem;
+      gap: 1.5rem;
     }
     .budget-title {
       font-size: 28px;
     }
-    .budget-subtitle {
-      font-size: 14px;
-    }
-    .budget-overview-card,
     .budget-card {
-      padding: 2rem 2.25rem;
+      padding: 1.5rem 1.75rem;
     }
-    .budget-overview-value {
-      font-size: 26px;
+    .budget-remaining-card,
+    .budget-expenses-card {
+      padding: 1.75rem 2rem;
     }
-    .budget-card-title {
-      font-size: 18px;
-    }
-  }
-  @media (min-width: 1280px) {
-    .budget-root {
-      max-width: 1200px;
-    }
-    .budget-amounts {
-      gap: 1.5rem;
+    .budget-remaining-value {
+      font-size: 36px;
     }
   }
 `;

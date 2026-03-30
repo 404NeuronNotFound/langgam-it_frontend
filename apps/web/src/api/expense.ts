@@ -24,6 +24,12 @@ export async function getExpenses(date?: string): Promise<Expense[]> {
   return response.data;
 }
 
+// Get expenses for a specific cycle
+export async function getExpensesByCycle(cycleId: number): Promise<Expense[]> {
+  const response = await apiClient.get(`/expenses/cycle/${cycleId}/`);
+  return response.data;
+}
+
 // Get today's expenses
 export async function getTodayExpenses(): Promise<Expense[]> {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD

@@ -5,6 +5,7 @@ import type { Expense, ExpenseCreate, DailyLimit } from "@/types/expense";
 import {
   createExpense,
   getExpenses,
+  getExpensesByCycle,
   getTodayExpenses,
   getDailyLimit,
 } from "@/api/expense";
@@ -18,6 +19,7 @@ interface ExpenseState {
 
   // Actions
   fetchExpenses: (date?: string) => Promise<void>;
+  fetchExpensesByCycle: (cycleId: number) => Promise<void>;
   fetchTodayExpenses: () => Promise<void>;
   fetchDailyLimit: () => Promise<void>;
   addExpense: (data: ExpenseCreate) => Promise<Expense>;
@@ -35,6 +37,16 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const expenses = await getExpenses(date);
+      set({ expenses, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message || "Failed to fetch expenses", isLoading: false });
+    }
+  },
+
+  fetchExpensesByCycle: async (cycleId: number) => {
+    set({ isLoading: true, error: null });
+    try {
+      const expenses = await getExpensesByCycle(cycleId);
       set({ expenses, isLoading: false });
     } catch (error: any) {
       set({ error: error.message || "Failed to fetch expenses", isLoading: false });

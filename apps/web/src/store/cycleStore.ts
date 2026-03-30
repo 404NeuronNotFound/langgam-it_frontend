@@ -8,6 +8,7 @@ import {
   submitIncome,
   submitInvestment,
   getAllCycles,
+  resetCycleExpenses,
 } from "@/api/cycle";
 
 interface CycleState {
@@ -24,6 +25,7 @@ interface CycleState {
   fetchAllCycles: () => Promise<void>;
   addIncome: (amount: number) => Promise<AllocationResult>;
   moveToInvestments: (amount: number) => Promise<AllocationResult>;
+  resetExpenses: () => Promise<void>;
   reset: () => void;
 }
 
@@ -100,6 +102,19 @@ export const useCycleStore = create<CycleState>((set) => ({
       return result;
     } catch (error: any) {
       set({ error: error.message || "Failed to move to investments", isLoading: false });
+      throw error;
+    }
+  },
+
+  resetExpenses: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await resetCycleExpenses();
+      // Refresh current cycle after reset
+      const cycle = await getCurrentCycle();
+      set({ currentCycle: cycle, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message || "Failed to reset expenses", isLoading: false });
       throw error;
     }
   },

@@ -47,3 +47,9 @@ export async function getAllCycles(): Promise<MonthCycle[]> {
   const response = await apiClient.get("/cycle/");
   return response.data;
 }
+
+// Reset expenses for current cycle
+export async function resetCycleExpenses(): Promise<any> {
+  const response = await apiClient.post("/cycle/reset-expenses/");
+  return response.data;
+}

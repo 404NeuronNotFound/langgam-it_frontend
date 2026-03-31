@@ -1,32 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useReportStore } from "../store/reportStore";
+import { useCycleStore } from "../store/cycleStore";
+import { useExpenseStore } from "../store/expenseStore";
 
 interface EndOfMonthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
-  cycleData?: {
-    month: string;
-    income: string;
-    expenses_budget: string;
-    wants_budget: string;
-    remaining_budget: string;
-    needs_spent: number;
-    wants_spent: number;
-    unspent_total: number;
-  };
 }
 
-export default function EndOfMonthModal({
-  isOpen,
-  onClose,
-  onConfirm,
-  cycleData,
-}: EndOfMonthModalProps) {
+export default function EndOfMonthModal({ isOpen, onClose }: EndOfMonthModalProps) {
   const [isConfirming, setIsConfirming] = useState(false);
+  const { closeCurrentMonth } = useReportStore();
+  const { currentCycle, fetchCurrentCycle } = useCycleStore();
+  const { expenses } = useExpenseStore();
 
-  if (!isOpen || !cycleData) return null;
+  if (!isOpen || !currentCycle) return null;
 
   function formatCurrency(val: number | string) {
     const num = typeof val === "string" ? parseFloat(val) : val;
@@ -40,19 +30,33 @@ export default function EndOfMonthModal({
   async function handleConfirm() {
     setIsConfirming(true);
     try {
-      await onConfirm();
+      await closeCurrentMonth();
+      await fetchCurrentCycle();
+      onClose();
+    } catch (error) {
+      console.error("Failed to close month:", error);
     } finally {
       setIsConfirming(false);
     }
   }
 
-  const monthYear = new Date(cycleData.month + "-01").toLocaleDateString("en-US", {
+  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
 
-  const needsRemaining = parseFloat(cycleData.expenses_budget) - cycleData.needs_spent;
-  const wantsRemaining = parseFloat(cycleData.wants_budget) - cycleData.wants_spent;
+  // Calculate spent amounts from expenses
+  const currentCycleExpenses = expenses.filter((e) => e.cycle === currentCycle.id);
+  const needsSpent = currentCycleExpenses
+    .filter((e) => e.category === "needs")
+    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const wantsSpent = currentCycleExpenses
+    .filter((e) => e.category === "wants")
+    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+  const needsRemaining = parseFloat(currentCycle.expenses_budget) - needsSpent;
+  const wantsRemaining = parseFloat(currentCycle.wants_budget) - wantsSpent;
+  const unspentTotal = needsRemaining + wantsRemaining;
 
   return (
     <>
@@ -75,7 +79,7 @@ export default function EndOfMonthModal({
               <p className="eom-section-label">Income</p>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Total Income</span>
-                <span className="eom-stat-value">{formatCurrency(cycleData.income)}</span>
+                <span className="eom-stat-value">{formatCurrency(currentCycle.income)}</span>
               </div>
             </div>
 
@@ -84,11 +88,11 @@ export default function EndOfMonthModal({
               <p className="eom-section-label">Spending</p>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Allocated)</span>
-                <span className="eom-stat-value">{formatCurrency(cycleData.expenses_budget)}</span>
+                <span className="eom-stat-value">{formatCurrency(currentCycle.expenses_budget)}</span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Spent)</span>
-                <span className="eom-stat-value eom-spent">{formatCurrency(cycleData.needs_spent)}</span>
+                <span className="eom-stat-value eom-spent">{formatCurrency(needsSpent)}</span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Remaining)</span>
@@ -99,11 +103,11 @@ export default function EndOfMonthModal({
 
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Allocated)</span>
-                <span className="eom-stat-value">{formatCurrency(cycleData.wants_budget)}</span>
+                <span className="eom-stat-value">{formatCurrency(currentCycle.wants_budget)}</span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Spent)</span>
-                <span className="eom-stat-value eom-spent">{formatCurrency(cycleData.wants_spent)}</span>
+                <span className="eom-stat-value eom-spent">{formatCurrency(wantsSpent)}</span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Remaining)</span>
@@ -116,7 +120,7 @@ export default function EndOfMonthModal({
               <p className="eom-section-label">Unspent Budget Rollover</p>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Total Unspent</span>
-                <span className="eom-stat-value eom-success">{formatCurrency(cycleData.unspent_total)}</span>
+                <span className="eom-stat-value eom-success">{formatCurrency(unspentTotal)}</span>
               </div>
               <p className="eom-info-text">
                 This amount will be added to your Cash on Hand for discretionary use.

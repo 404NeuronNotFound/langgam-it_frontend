@@ -42,6 +42,17 @@ export async function submitInvestment(data: InvestmentSubmission): Promise<Allo
   return response.data;
 }
 
+// Transfer between savings and investments
+export async function transferFunds(data: { amount: number; from: "savings" | "investments"; to: "savings" | "investments" }): Promise<any> {
+  // This endpoint might need to be created in backend
+  // For now, we'll use the invest endpoint for savings -> investments
+  if (data.from === "savings" && data.to === "investments") {
+    return submitInvestment({ amount: data.amount });
+  }
+  // Add endpoint for investments -> savings transfer when backend is ready
+  throw new Error("Transfer from investments to savings not yet implemented in backend");
+}
+
 // Get all cycles (for history)
 export async function getAllCycles(): Promise<MonthCycle[]> {
   const response = await apiClient.get("/cycle/");

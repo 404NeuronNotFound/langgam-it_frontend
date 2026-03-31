@@ -1,36 +1,26 @@
 "use client";
 
-import { useState } from "react";
-
-// Mock data for now - will be replaced with API calls later
-const mockInvestments = [
-  {
-    id: 1,
-    name: "Apple Inc. (AAPL)",
-    type: "stocks",
-    purchase_price: "150000",
-    current_value: "175000",
-    quantity: "100",
-    purchase_date: "2025-01-15",
-    notes: "Tech stock investment",
-  },
-  {
-    id: 2,
-    name: "Bitcoin",
-    type: "crypto",
-    purchase_price: "50000",
-    current_value: "48000",
-    quantity: "0.5",
-    purchase_date: "2025-02-01",
-    notes: "Long-term hold",
-  },
-];
+import { useEffect, useState } from "react";
+import { useInvestmentStore } from "../../store/investmentStore";
+import { useFinanceStore } from "../../store/financeStore";
+import AddInvestmentModal from "../../components/AddInvestmentModal";
+import TransferModal from "../../components/TransferModal";
+import type { InvestmentCreate } from "@/types/investment";
 
 export default function InvestmentsPage() {
-  const [investments] = useState(mockInvestments);
+  const { investments, fetchInvestments, addInvestment, editInvestment, isLoading, error } = useInvestmentStore();
+  const { profile } = useFinanceStore();
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+
+  useEffect(() => {
+    fetchInvestments();
+  }, [fetchInvestments]);
 
   // Calculate totals
-  const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.purchase_price), 0);
+  const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.total_invested), 0);
   const totalCurrent = investments.reduce((sum, inv) => sum + parseFloat(inv.current_value), 0);
   const totalPL = totalCurrent - totalInvested;
   const plPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
@@ -68,6 +58,73 @@ export default function InvestmentsPage() {
     return colors[type] || colors.other;
   }
 
+  function handleEditClick(investment: any) {
+    setEditingId(investment.id);
+    setEditValue(investment.current_value);
+  }
+
+  async function handleSaveEdit(id: number) {
+    try {
+      await editInvestment(id, { current_value: parseFloat(editValue) });
+      setEditingId(null);
+      setEditValue("");
+    } catch (error) {
+      console.error("Failed to update investment:", error);
+    }
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setEditValue("");
+  }
+
+  async function handleAddInvestment(data: InvestmentCreate) {
+    await addInvestment(data);
+  }
+
+  if (error) {
+    return (
+      <>
+        <style>{INVESTMENTS_STYLES}</style>
+        <div className="inv-root">
+          <div className="inv-header">
+            <h1 className="inv-title">Investments</h1>
+            <p className="inv-subtitle" style={{ color: "var(--error)" }}>
+              Error: {error}
+            </p>
+          </div>
+          <button
+            onClick={() => fetchInvestments()}
+            style={{
+              padding: "10px 20px",
+              background: "var(--text-1)",
+              color: "var(--bg-card)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  if (isLoading && investments.length === 0) {
+    return (
+      <>
+        <style>{INVESTMENTS_STYLES}</style>
+        <div className="inv-root">
+          <div className="inv-header">
+            <h1 className="inv-title">Investments</h1>
+            <p className="inv-subtitle">Loading...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <style>{INVESTMENTS_STYLES}</style>
@@ -77,9 +134,14 @@ export default function InvestmentsPage() {
             <h1 className="inv-title">Investments</h1>
             <p className="inv-subtitle">Track your assets and portfolio performance</p>
           </div>
-          <button className="inv-btn-primary">
-            Add Investment
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button className="inv-btn-secondary" onClick={() => setShowTransferModal(true)}>
+              Transfer Funds
+            </button>
+            <button className="inv-btn-primary" onClick={() => setShowAddModal(true)}>
+              Add Investment
+            </button>
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -105,6 +167,13 @@ export default function InvestmentsPage() {
               style={{ color: totalPL >= 0 ? "var(--success)" : "var(--error)" }}
             >
               {totalPL >= 0 ? "+" : ""}{plPercentage.toFixed(2)}%
+            </p>
+          </div>
+          <div className="inv-summary-card">
+            <p className="inv-summary-label">Profile Total</p>
+            <p className="inv-summary-value">{formatCurrency(profile ? parseFloat(profile.investments_total) : 0)}</p>
+            <p className="inv-summary-sub" style={{ fontSize: 11, color: "var(--text-3)" }}>
+              From setup wizard
             </p>
           </div>
         </div>
@@ -135,17 +204,15 @@ export default function InvestmentsPage() {
           ) : (
             <div className="inv-list">
               {investments.map((investment) => {
-                const invested = parseFloat(investment.purchase_price);
+                const invested = parseFloat(investment.total_invested);
                 const current = parseFloat(investment.current_value);
-                const pl = current - invested;
+                const pl = parseFloat(investment.profit_loss);
                 const plPercent = invested > 0 ? (pl / invested) * 100 : 0;
                 const typeColor = getTypeColor(investment.type);
+                const isEditing = editingId === investment.id;
 
                 return (
-                  <div
-                    key={investment.id}
-                    className="inv-item"
-                  >
+                  <div key={investment.id} className="inv-item">
                     <div className="inv-item-left">
                       <div className="inv-item-icon" style={{ background: typeColor.bg }}>
                         <InvestmentIcon type={investment.type} color={typeColor.text} />
@@ -153,27 +220,53 @@ export default function InvestmentsPage() {
                       <div>
                         <p className="inv-item-name">{investment.name}</p>
                         <div className="inv-item-meta">
-                          <span
-                            className="inv-item-type"
-                            style={{ color: typeColor.text }}
-                          >
+                          <span className="inv-item-type" style={{ color: typeColor.text }}>
                             {getTypeLabel(investment.type)}
                           </span>
                           <span className="inv-item-quantity">
-                            Qty: {parseFloat(investment.quantity).toLocaleString()}
+                            Invested: {formatCurrency(invested)}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="inv-item-right">
-                      <p className="inv-item-value">{formatCurrency(current)}</p>
-                      <p
-                        className="inv-item-pl"
-                        style={{ color: pl >= 0 ? "var(--success)" : "var(--error)" }}
-                      >
-                        {pl >= 0 ? "+" : ""}{formatCurrency(pl)} ({pl >= 0 ? "+" : ""}
-                        {plPercent.toFixed(2)}%)
-                      </p>
+                      {isEditing ? (
+                        <div className="inv-edit-form">
+                          <input
+                            type="number"
+                            className="inv-edit-input"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            placeholder="Current value"
+                          />
+                          <button
+                            className="inv-edit-btn inv-save-btn"
+                            onClick={() => handleSaveEdit(investment.id)}
+                          >
+                            Save
+                          </button>
+                          <button className="inv-edit-btn inv-cancel-btn" onClick={handleCancelEdit}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="inv-item-value">{formatCurrency(current)}</p>
+                          <p
+                            className="inv-item-pl"
+                            style={{ color: pl >= 0 ? "var(--success)" : "var(--error)" }}
+                          >
+                            {pl >= 0 ? "+" : ""}{formatCurrency(pl)} ({pl >= 0 ? "+" : ""}
+                            {plPercent.toFixed(2)}%)
+                          </p>
+                          <button
+                            className="inv-update-btn"
+                            onClick={() => handleEditClick(investment)}
+                          >
+                            Update Value
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -181,6 +274,17 @@ export default function InvestmentsPage() {
             </div>
           )}
         </div>
+
+        <AddInvestmentModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddInvestment}
+        />
+
+        <TransferModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+        />
       </div>
     </>
   );
@@ -338,9 +442,24 @@ const INVESTMENTS_STYLES = `
   }
   .inv-btn-primary:hover { opacity: 0.82; }
 
+  .inv-btn-secondary {
+    height: 36px;
+    padding: 0 16px;
+    background: var(--bg-surface);
+    color: var(--text-1);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .inv-btn-secondary:hover { opacity: 0.82; }
+
   .inv-summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
   .inv-summary-card {
@@ -461,9 +580,61 @@ const INVESTMENTS_STYLES = `
     font-weight: 500;
   }
 
+  .inv-update-btn {
+    margin-top: 8px;
+    height: 28px;
+    padding: 0 12px;
+    background: var(--bg-surface);
+    color: var(--text-1);
+    border: 0.5px solid var(--border-md);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .inv-update-btn:hover { opacity: 0.82; }
+
+  .inv-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .inv-edit-input {
+    width: 140px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+    border: 0.5px solid var(--border-md);
+    border-radius: 6px;
+    background: var(--bg-surface);
+    color: var(--text-1);
+  }
+  .inv-edit-btn {
+    height: 28px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .inv-edit-btn:hover { opacity: 0.82; }
+  .inv-save-btn {
+    background: var(--success);
+    color: white;
+  }
+  .inv-cancel-btn {
+    background: var(--bg-surface);
+    color: var(--text-2);
+    border: 0.5px solid var(--border-md);
+  }
+
   @media (max-width: 768px) {
     .inv-summary-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
     }
     .inv-title {
       font-size: 20px;

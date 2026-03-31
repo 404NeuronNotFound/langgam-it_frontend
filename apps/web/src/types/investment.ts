@@ -5,11 +5,9 @@ export interface Investment {
   profile: number;
   name: string;
   type: "stocks" | "crypto" | "real_estate" | "bonds" | "mutual_funds" | "other";
-  purchase_price: string;
+  total_invested: string;
   current_value: string;
-  quantity: string;
-  purchase_date: string;
-  notes?: string;
+  profit_loss: string; // Computed field from backend
   created_at: string;
   updated_at: string;
 }
@@ -17,28 +15,13 @@ export interface Investment {
 export interface InvestmentCreate {
   name: string;
   type: "stocks" | "crypto" | "real_estate" | "bonds" | "mutual_funds" | "other";
-  purchase_price: number;
+  total_invested: number;
   current_value: number;
-  quantity: number;
-  purchase_date?: string;
-  notes?: string;
 }
 
 export interface InvestmentUpdate {
-  current_value: number;
-  notes?: string;
-}
-
-export interface InvestmentSummary {
-  total_invested: string;
-  current_value: string;
-  profit_loss: string;
-  profit_loss_percentage: string;
-  by_type: {
-    [key: string]: {
-      invested: string;
-      current: string;
-      pl: string;
-    };
-  };
+  name?: string;
+  type?: "stocks" | "crypto" | "real_estate" | "bonds" | "mutual_funds" | "other";
+  total_invested?: number;
+  current_value?: number;
 }

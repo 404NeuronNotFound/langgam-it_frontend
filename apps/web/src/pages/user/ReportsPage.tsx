@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useReportStore } from "../../store/reportStore";
 import {
   BarChart,
   Bar,
@@ -14,36 +15,13 @@ import {
   Legend,
 } from "recharts";
 
-// Mock data - will be replaced with API calls later
-const mockIncomeVsExpenses = [
-  { month: "Jan", income: 10000, expenses: 7500 },
-  { month: "Feb", income: 12000, expenses: 8200 },
-  { month: "Mar", income: 11000, expenses: 7800 },
-  { month: "Apr", income: 13000, expenses: 9100 },
-  { month: "May", income: 11500, expenses: 8500 },
-  { month: "Jun", income: 14000, expenses: 9800 },
-];
-
-const mockSavingsTrend = [
-  { month: "Jan", savings: 2500, cumulative: 2500 },
-  { month: "Feb", savings: 3800, cumulative: 6300 },
-  { month: "Mar", savings: 3200, cumulative: 9500 },
-  { month: "Apr", savings: 3900, cumulative: 13400 },
-  { month: "May", savings: 3000, cumulative: 16400 },
-  { month: "Jun", savings: 4200, cumulative: 20600 },
-];
-
-const mockNetWorth = [
-  { month: "Jan", net_worth: 50000 },
-  { month: "Feb", net_worth: 56300 },
-  { month: "Mar", net_worth: 59500 },
-  { month: "Apr", net_worth: 63400 },
-  { month: "May", net_worth: 66400 },
-  { month: "Jun", net_worth: 70600 },
-];
-
 export default function ReportsPage() {
+  const { reportData, fetchReports, isLoading, error } = useReportStore();
   const [timeRange, setTimeRange] = useState<"6m" | "1y" | "all">("6m");
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   function formatCurrency(val: number) {
     return new Intl.NumberFormat("en-PH", {
@@ -54,11 +32,63 @@ export default function ReportsPage() {
     }).format(val);
   }
 
-  // Calculate summary stats
-  const totalIncome = mockIncomeVsExpenses.reduce((sum, d) => sum + d.income, 0);
-  const totalExpenses = mockIncomeVsExpenses.reduce((sum, d) => sum + d.expenses, 0);
-  const totalSavings = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
+  if (error) {
+    return (
+      <>
+        <style>{REPORTS_STYLES}</style>
+        <div className="rep-root">
+          <div className="rep-header">
+            <h1 className="rep-title">Reports</h1>
+            <p className="rep-subtitle" style={{ color: "var(--error)" }}>
+              Error: {error}
+            </p>
+          </div>
+          <button
+            onClick={() => fetchReports()}
+            style={{
+              padding: "10px 20px",
+              background: "var(--text-1)",
+              color: "var(--bg-card)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  if (isLoading || !reportData || !reportData.summary) {
+    return (
+      <>
+        <style>{REPORTS_STYLES}</style>
+        <div className="rep-root">
+          <div className="rep-header">
+            <h1 className="rep-title">Reports</h1>
+            <p className="rep-subtitle">{isLoading ? "Loading..." : "No data available"}</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Calculate summary stats with fallbacks
+  const summary = reportData.summary || {};
+  const totalIncome = parseFloat(summary.total_income || "0");
+  const totalExpenses = parseFloat(summary.total_expenses || "0");
+  const totalSavings = parseFloat(summary.total_savings || "0");
+  const savingsRate = parseFloat(summary.savings_rate || "0");
+
+  // Use data with fallbacks
+  const incomeVsExpenses = reportData.income_vs_expenses || [];
+  const savingsTrend = reportData.savings_trend || [];
+  const netWorthHistory = reportData.net_worth_history || [];
+
+  // Show message if no data
+  const hasData = incomeVsExpenses.length > 0 || savingsTrend.length > 0 || netWorthHistory.length > 0;
 
   return (
     <>
@@ -119,8 +149,26 @@ export default function ReportsPage() {
           </div>
         </div>
 
+        {!hasData && (
+          <div style={{
+            background: "var(--bg-card)",
+            border: "0.5px solid var(--border-md)",
+            borderRadius: "var(--radius-md)",
+            padding: "3rem 2rem",
+            textAlign: "center",
+          }}>
+            <p style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 8 }}>
+              No financial data available yet
+            </p>
+            <p style={{ fontSize: 12, color: "var(--text-3)" }}>
+              Start by adding income and tracking expenses to see your reports
+            </p>
+          </div>
+        )}
+
         {/* Income vs Expenses Chart */}
-        <div className="rep-chart-card">
+        {incomeVsExpenses.length > 0 && (
+          <div className="rep-chart-card">
           <div className="rep-chart-header">
             <div>
               <p className="rep-chart-title">Income vs Expenses</p>
@@ -129,7 +177,7 @@ export default function ReportsPage() {
           </div>
           <div className="rep-chart-body">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={mockIncomeVsExpenses}>
+              <BarChart data={incomeVsExpenses}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="month" stroke="var(--text-3)" style={{ fontSize: 12 }} />
                 <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
@@ -149,9 +197,11 @@ export default function ReportsPage() {
             </ResponsiveContainer>
           </div>
         </div>
+        )}
 
         {/* Savings Trend Chart */}
-        <div className="rep-chart-card">
+        {savingsTrend.length > 0 && (
+          <div className="rep-chart-card">
           <div className="rep-chart-header">
             <div>
               <p className="rep-chart-title">Savings Trend</p>
@@ -160,7 +210,7 @@ export default function ReportsPage() {
           </div>
           <div className="rep-chart-body">
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockSavingsTrend}>
+              <LineChart data={savingsTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="month" stroke="var(--text-3)" style={{ fontSize: 12 }} />
                 <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
@@ -194,9 +244,11 @@ export default function ReportsPage() {
             </ResponsiveContainer>
           </div>
         </div>
+        )}
 
         {/* Net Worth Chart */}
-        <div className="rep-chart-card">
+        {netWorthHistory.length > 0 && (
+          <div className="rep-chart-card">
           <div className="rep-chart-header">
             <div>
               <p className="rep-chart-title">Net Worth Over Time</p>
@@ -205,7 +257,7 @@ export default function ReportsPage() {
           </div>
           <div className="rep-chart-body">
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockNetWorth}>
+              <LineChart data={netWorthHistory}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="month" stroke="var(--text-3)" style={{ fontSize: 12 }} />
                 <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
@@ -230,6 +282,7 @@ export default function ReportsPage() {
             </ResponsiveContainer>
           </div>
         </div>
+        )}
       </div>
     </>
   );

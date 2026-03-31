@@ -1,27 +1,37 @@
-// API functions for investments
+// api/investment.ts
 
 import { apiClient } from "./client";
-import type { Investment, InvestmentCreate, InvestmentUpdate } from "@/types/investment";
+import type { Investment, InvestmentCreate, InvestmentUpdate } from "../types/investment";
 
-// Get all investments
+// ── Investments CRUD ──────────────────────────────────────────────────────────
+
 export async function getInvestments(): Promise<Investment[]> {
-  const response = await apiClient.get("/investments/");
-  return response.data;
+  const { data } = await apiClient.get<Investment[]>("/investments/");
+  return data;
 }
 
-// Create a new investment
-export async function createInvestment(data: InvestmentCreate): Promise<Investment> {
-  const response = await apiClient.post("/investments/", data);
-  return response.data;
+export async function createInvestment(payload: InvestmentCreate): Promise<Investment> {
+  const { data } = await apiClient.post<Investment>("/investments/", payload);
+  return data;
 }
 
-// Update an investment
-export async function updateInvestment(id: number, data: InvestmentUpdate): Promise<Investment> {
-  const response = await apiClient.patch(`/investments/${id}/`, data);
-  return response.data;
+export async function updateInvestment(id: number, payload: InvestmentUpdate): Promise<Investment> {
+  const { data } = await apiClient.patch<Investment>(`/investments/${id}/`, payload);
+  return data;
 }
 
-// Delete an investment
 export async function deleteInvestment(id: number): Promise<void> {
   await apiClient.delete(`/investments/${id}/`);
+}
+
+// ── Transfer between savings and investments ───────────────────────────────
+
+export async function investFromSavings(amount: number): Promise<{ profile: object }> {
+  const { data } = await apiClient.post("/invest/", { amount });
+  return data;
+}
+
+export async function divestToSavings(amount: number): Promise<{ profile: object }> {
+  const { data } = await apiClient.post("/divest/", { amount });
+  return data;
 }

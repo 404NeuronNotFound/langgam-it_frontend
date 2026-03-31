@@ -1,13 +1,13 @@
-// Types for investments and assets
+// types/investment.ts
 
 export interface Investment {
   id: number;
-  profile: number;
   name: string;
   type: "stocks" | "crypto" | "real_estate" | "bonds" | "mutual_funds" | "other";
-  total_invested: string;
-  current_value: string;
-  profit_loss: string; // Computed field from backend
+  total_invested: string;        // decimal string from DRF
+  current_value: string;         // decimal string from DRF
+  profit_loss: string;           // computed: current_value - total_invested
+  profit_loss_percentage: string;// computed: (profit_loss / total_invested) * 100
   created_at: string;
   updated_at: string;
 }

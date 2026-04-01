@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useInvestmentStore } from "../store/investmentStore";
+import { useInvestmentAllocationStore } from "../store/investmentAllocationStore";
 import { useFinanceStore } from "../store/financeStore";
 
 interface TransferModalProps {
@@ -12,6 +13,7 @@ interface TransferModalProps {
 export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
   const { profile } = useFinanceStore();
   const { transferToInvestments, transferToSavings, isLoading } = useInvestmentStore();
+  const { updateAllocation } = useInvestmentAllocationStore();
 
   const [amount, setAmount]       = useState("");
   const [direction, setDirection] = useState<"to_investments" | "to_savings">("to_investments");
@@ -51,6 +53,8 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
     try {
       if (direction === "to_investments") {
         await transferToInvestments(transferAmount);
+        // Sync allocation when transferring to investments
+        await updateAllocation(transferAmount);
       } else {
         await transferToSavings(transferAmount);
       }

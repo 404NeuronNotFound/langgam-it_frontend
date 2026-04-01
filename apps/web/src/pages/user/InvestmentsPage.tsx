@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useInvestmentStore } from "../../store/investmentStore";
+import { useInvestmentAllocationStore } from "../../store/investmentAllocationStore";
 import { useFinanceStore } from "../../store/financeStore";
 import AddInvestmentModal from "../../components/AddInvestmentModal";
 import TransferModal from "../../components/TransferModal";
@@ -9,6 +10,7 @@ import type { InvestmentCreate } from "@/types/investment";
 
 export default function InvestmentsPage() {
   const { investments, fetchInvestments, addInvestment, editInvestment, isLoading, error } = useInvestmentStore();
+  const { allocation, fetchAllocation } = useInvestmentAllocationStore();
   const { profile } = useFinanceStore();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -17,7 +19,8 @@ export default function InvestmentsPage() {
 
   useEffect(() => {
     fetchInvestments();
-  }, [fetchInvestments]);
+    fetchAllocation();
+  }, [fetchInvestments, fetchAllocation]);
 
   // Calculate totals
   const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.total_invested), 0);
@@ -177,6 +180,41 @@ export default function InvestmentsPage() {
             </p>
           </div>
         </div>
+
+        {/* Allocation Status */}
+        {allocation && (
+          <div className="inv-allocation-card">
+            <div className="inv-allocation-header">
+              <div>
+                <p className="inv-allocation-title">Investment Allocation</p>
+                <p className="inv-allocation-sub">
+                  {allocation.is_balanced ? "✓ Balanced" : "⚠ Mismatch"}
+                </p>
+              </div>
+              <div className="inv-allocation-status" style={{
+                color: allocation.is_balanced ? "var(--success)" : "var(--error)",
+              }}>
+                {formatCurrency(totalInvested)} / {formatCurrency(parseFloat(allocation.total_allocated))}
+              </div>
+            </div>
+            <div className="inv-allocation-progress">
+              <div className="inv-allocation-bar">
+                <div
+                  className="inv-allocation-fill"
+                  style={{
+                    width: `${Math.min((totalInvested / parseFloat(allocation.total_allocated)) * 100, 100)}%`,
+                    background: allocation.is_balanced ? "var(--success)" : "var(--error)",
+                  }}
+                />
+              </div>
+            </div>
+            {!allocation.is_balanced && (
+              <p className="inv-allocation-warning">
+                Individual investments don't match setup total. Please adjust to balance.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Investments List */}
         <div className="inv-list-card">
@@ -487,6 +525,54 @@ const INVESTMENTS_STYLES = `
   .inv-summary-sub {
     font-size: 13px;
     font-weight: 600;
+  }
+
+  .inv-allocation-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+  .inv-allocation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .inv-allocation-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-1);
+    margin-bottom: 4px;
+  }
+  .inv-allocation-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  .inv-allocation-status {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .inv-allocation-progress {
+    margin-bottom: 1rem;
+  }
+  .inv-allocation-bar {
+    height: 8px;
+    background: var(--bg-surface);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .inv-allocation-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .inv-allocation-warning {
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 8px;
   }
 
   .inv-list-card {

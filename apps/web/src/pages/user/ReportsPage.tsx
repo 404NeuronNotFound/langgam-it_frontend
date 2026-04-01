@@ -61,7 +61,7 @@ export default function ReportsPage() {
     );
   }
 
-  if (isLoading || !reportData || !reportData.summary) {
+  if (isLoading || !reportData) {
     return (
       <>
         <style>{REPORTS_STYLES}</style>
@@ -76,16 +76,16 @@ export default function ReportsPage() {
   }
 
   // Calculate summary stats with fallbacks
-  const summary = reportData.summary || {};
-  const totalIncome = parseFloat(summary.total_income || "0");
-  const totalExpenses = parseFloat(summary.total_expenses || "0");
-  const totalSavings = parseFloat(summary.total_savings || "0");
-  const savingsRate = parseFloat(summary.savings_rate || "0");
+  const summary = reportData?.summary || {};
+  const totalIncome = parseFloat(summary?.total_income || "0");
+  const totalExpenses = parseFloat(summary?.total_expenses || "0");
+  const totalSavings = parseFloat(summary?.total_savings || "0");
+  const savingsRate = parseFloat(summary?.savings_rate || "0");
 
   // Use data with fallbacks
-  const incomeVsExpenses = reportData.income_vs_expenses || [];
-  const savingsTrend = reportData.savings_trend || [];
-  const netWorthHistory = reportData.net_worth_history || [];
+  const incomeVsExpenses = reportData?.income_vs_expenses || [];
+  const savingsTrend = reportData?.savings_trend || [];
+  const netWorthHistory = reportData?.net_worth_history || [];
 
   // Show message if no data
   const hasData = incomeVsExpenses.length > 0 || savingsTrend.length > 0 || netWorthHistory.length > 0;

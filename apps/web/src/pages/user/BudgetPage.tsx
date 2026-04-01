@@ -1,24 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useCycleStore } from "../../store/cycleStore";
 import { useExpenseStore } from "../../store/expenseStore";
 import { useFinanceStore } from "../../store/financeStore";
 
 export default function BudgetPage() {
-  const { currentCycle, fetchCurrentCycle, resetExpenses } = useCycleStore();
-  const { expenses, fetchExpenses, isLoading } = useExpenseStore();
+  const { currentCycle, fetchCurrentCycle } = useCycleStore();
+  const { expenses, fetchExpensesByCycle, isLoading } = useExpenseStore();
   const { profile } = useFinanceStore();
-  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     fetchCurrentCycle();
   }, [fetchCurrentCycle]);
 
   useEffect(() => {
-    // Fetch all expenses - we'll filter by cycle on frontend
-    fetchExpenses();
-  }, [fetchExpenses]);
+    // Fetch expenses for current cycle only
+    if (currentCycle?.id) {
+      fetchExpensesByCycle(currentCycle.id);
+    }
+  }, [currentCycle?.id, fetchExpensesByCycle]);
 
   const currency = profile?.currency || "PHP";
 
@@ -29,19 +30,6 @@ export default function BudgetPage() {
       currency,
       minimumFractionDigits: 2,
     }).format(num);
-  }
-
-  async function handleResetExpenses() {
-    setIsResetting(true);
-    try {
-      await resetExpenses();
-      // Refresh expenses after reset
-      await fetchExpenses();
-    } catch (error) {
-      console.error("Failed to reset expenses:", error);
-    } finally {
-      setIsResetting(false);
-    }
   }
 
   if (isLoading && !currentCycle) {
@@ -76,11 +64,10 @@ export default function BudgetPage() {
   const wantsBudget = parseFloat(currentCycle.wants_budget);
   const remainingBudget = parseFloat(currentCycle.remaining_budget);
 
-  // Filter expenses to only include those from the current cycle
-  const currentCycleExpenses = expenses.filter((e) => e.cycle === currentCycle.id);
+  // Expenses are already filtered by cycle from the API
+  const currentCycleExpenses = expenses;
 
   console.log("Budget Page - Current Cycle ID:", currentCycle.id);
-  console.log("Budget Page - All Expenses:", expenses);
   console.log("Budget Page - Current Cycle Expenses:", currentCycleExpenses);
 
   const needsSpent = currentCycleExpenses
@@ -96,9 +83,6 @@ export default function BudgetPage() {
       const amount = parseFloat(e.amount);
       return sum + amount;
     }, 0);
-
-  console.log("Budget Page - Needs spent (current cycle only):", needsSpent);
-  console.log("Budget Page - Wants spent (current cycle only):", wantsSpent);
 
   const needsRemaining = expensesBudget - needsSpent;
   const wantsRemaining = wantsBudget - wantsSpent;

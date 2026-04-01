@@ -6,6 +6,7 @@ import { useInvestmentAllocationStore } from "../../store/investmentAllocationSt
 import { useFinanceStore } from "../../store/financeStore";
 import AddInvestmentModal from "../../components/AddInvestmentModal";
 import TransferModal from "../../components/TransferModal";
+import InvestmentAllocationModal, { type InvestmentTypeAllocation } from "../../components/InvestmentAllocationModal";
 import type { InvestmentCreate } from "@/types/investment";
 
 export default function InvestmentsPage() {
@@ -16,6 +17,7 @@ export default function InvestmentsPage() {
   const [editValue, setEditValue] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showAllocationModal, setShowAllocationModal] = useState(false);
 
   useEffect(() => {
     fetchInvestments();
@@ -85,6 +87,12 @@ export default function InvestmentsPage() {
     await addInvestment(data);
   }
 
+  async function handleSaveAllocations(_allocations: InvestmentTypeAllocation[]) {
+    // For now, just close the modal
+    // In the future, this could save to backend if needed
+    setShowAllocationModal(false);
+  }
+
   if (error) {
     return (
       <>
@@ -138,6 +146,9 @@ export default function InvestmentsPage() {
             <p className="inv-subtitle">Track your assets and portfolio performance</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
+            <button className="inv-btn-secondary" onClick={() => setShowAllocationModal(true)}>
+              Allocate by Type
+            </button>
             <button className="inv-btn-secondary" onClick={() => setShowTransferModal(true)}>
               Transfer Funds
             </button>
@@ -324,6 +335,13 @@ export default function InvestmentsPage() {
         <TransferModal
           isOpen={showTransferModal}
           onClose={() => setShowTransferModal(false)}
+        />
+
+        <InvestmentAllocationModal
+          isOpen={showAllocationModal}
+          onClose={() => setShowAllocationModal(false)}
+          onSubmit={handleSaveAllocations}
+          totalAllocated={profile ? parseFloat(profile.investments_total) : 0}
         />
       </div>
     </>

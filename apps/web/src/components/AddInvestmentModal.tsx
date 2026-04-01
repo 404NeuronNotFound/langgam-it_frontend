@@ -7,9 +7,17 @@ interface AddInvestmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: InvestmentCreate) => Promise<void>;
+  totalInvested?: number;
+  totalAllocated?: number;
 }
 
-export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInvestmentModalProps) {
+export default function AddInvestmentModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit,
+  totalInvested = 0,
+  totalAllocated = 0,
+}: AddInvestmentModalProps) {
   const [formData, setFormData] = useState<InvestmentCreate>({
     name: "",
     type: "stocks",
@@ -34,6 +42,18 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
     }
     if (formData.current_value <= 0) {
       setError("Please enter a valid current value");
+      return;
+    }
+
+    // Check if adding this investment would exceed allocation
+    const remainingAllocation = totalAllocated - totalInvested;
+    if (formData.total_invested > remainingAllocation) {
+      setError(
+        `Cannot add investment. Remaining allocation: ₱${remainingAllocation.toLocaleString("en-PH", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}. Please transfer more funds from savings to increase allocation.`
+      );
       return;
     }
 
@@ -81,6 +101,30 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
           </div>
 
           <form className="aim-body" onSubmit={handleSubmit}>
+            {/* Allocation Info */}
+            {totalAllocated > 0 && (
+              <div className="aim-allocation-info">
+                <div className="aim-allocation-row">
+                  <span className="aim-allocation-label">Total Allocated:</span>
+                  <span className="aim-allocation-value">
+                    ₱{totalAllocated.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="aim-allocation-row">
+                  <span className="aim-allocation-label">Already Invested:</span>
+                  <span className="aim-allocation-value">
+                    ₱{totalInvested.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="aim-allocation-row" style={{ borderTop: "0.5px solid var(--border-md)", paddingTop: "8px", marginTop: "8px" }}>
+                  <span className="aim-allocation-label" style={{ fontWeight: 600 }}>Remaining:</span>
+                  <span className="aim-allocation-value" style={{ fontWeight: 600, color: (totalAllocated - totalInvested) > 0 ? "var(--success)" : "var(--error)" }}>
+                    ₱{(totalAllocated - totalInvested).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="aim-field">
               <label className="aim-label" htmlFor="name">Investment Name</label>
               <input
@@ -177,6 +221,7 @@ const MODAL_STYLES = `
     --text-2:     #52525B;
     --text-3:     #A1A1AA;
     --error:      #993C1D;
+    --success:    #3B6D11;
     --sans:  'Plus Jakarta Sans', system-ui, sans-serif;
     --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px;
   }
@@ -190,6 +235,7 @@ const MODAL_STYLES = `
       --text-2:     #A1A1AA;
       --text-3:     #52525B;
       --error:      #F0997B;
+      --success:    #97C459;
     }
   }
 
@@ -250,6 +296,28 @@ const MODAL_STYLES = `
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .aim-allocation-info {
+    background: var(--bg-surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .aim-allocation-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 6px 0;
+  }
+  .aim-allocation-label {
+    color: var(--text-3);
+  }
+  .aim-allocation-value {
+    color: var(--text-1);
+    font-weight: 500;
   }
 
   .aim-field {

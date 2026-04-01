@@ -317,6 +317,8 @@ export default function InvestmentsPage() {
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddInvestment}
+          totalInvested={totalInvested}
+          totalAllocated={allocation ? parseFloat(allocation.total_allocated) : 0}
         />
 
         <TransferModal

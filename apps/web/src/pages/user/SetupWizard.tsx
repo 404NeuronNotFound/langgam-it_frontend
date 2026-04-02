@@ -14,7 +14,6 @@ import { useFinanceStore } from "../../store/financeStore";
 interface SetupForm {
   emergency_fund: string;
   savings: string;
-  investments_total: string;
   rigs_fund: string;
   cash_on_hand: string;
 }
@@ -22,7 +21,6 @@ interface SetupForm {
 interface SetupErrors {
   emergency_fund?: string;
   savings?: string;
-  investments_total?: string;
   rigs_fund?: string;
   cash_on_hand?: string;
 }
@@ -55,15 +53,6 @@ const FIELDS: {
     icon: "piggy",
   },
   {
-    key: "investments_total",
-    label: "Investments",
-    description: "Stocks, crypto, mutual funds, etc.",
-    placeholder: "0.00",
-    iconColor: "var(--purple-icon)",
-    iconBg: "var(--purple-bg)",
-    icon: "chart",
-  },
-  {
     key: "rigs_fund",
     label: "Rigs fund",
     description: "Dedicated fund for equipment purchases.",
@@ -91,7 +80,6 @@ export default function SetupWizard() {
   const [form, setForm] = useState<SetupForm>({
     emergency_fund: "",
     savings: "",
-    investments_total: "",
     rigs_fund: "",
     cash_on_hand: "",
   });
@@ -148,7 +136,6 @@ export default function SetupWizard() {
         currency: "PHP",
         emergency_fund: parseFloat(form.emergency_fund) || 0,
         savings: parseFloat(form.savings) || 0,
-        investments_total: parseFloat(form.investments_total) || 0,
         rigs_fund: parseFloat(form.rigs_fund) || 0,
         cash_on_hand: parseFloat(form.cash_on_hand) || 0,
       });

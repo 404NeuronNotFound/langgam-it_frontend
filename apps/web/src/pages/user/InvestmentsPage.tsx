@@ -2,27 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useInvestmentStore } from "../../store/investmentStore";
-import { useInvestmentAllocationStore } from "../../store/investmentAllocationStore";
-import { useFinanceStore } from "../../store/financeStore";
 import AddInvestmentModal from "../../components/AddInvestmentModal";
-import TransferModal from "../../components/TransferModal";
-import InvestmentAllocationModal, { type InvestmentTypeAllocation } from "../../components/InvestmentAllocationModal";
 import type { InvestmentCreate } from "@/types/investment";
 
 export default function InvestmentsPage() {
   const { investments, fetchInvestments, addInvestment, editInvestment, isLoading, error } = useInvestmentStore();
-  const { allocation, fetchAllocation } = useInvestmentAllocationStore();
-  const { profile } = useFinanceStore();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [showAllocationModal, setShowAllocationModal] = useState(false);
 
   useEffect(() => {
     fetchInvestments();
-    fetchAllocation();
-  }, [fetchInvestments, fetchAllocation]);
+  }, [fetchInvestments]);
 
   // Calculate totals
   const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.total_invested), 0);
@@ -87,12 +78,6 @@ export default function InvestmentsPage() {
     await addInvestment(data);
   }
 
-  async function handleSaveAllocations(_allocations: InvestmentTypeAllocation[]) {
-    // For now, just close the modal
-    // In the future, this could save to backend if needed
-    setShowAllocationModal(false);
-  }
-
   if (error) {
     return (
       <>
@@ -146,12 +131,6 @@ export default function InvestmentsPage() {
             <p className="inv-subtitle">Track your assets and portfolio performance</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
-            <button className="inv-btn-secondary" onClick={() => setShowAllocationModal(true)}>
-              Allocate by Type
-            </button>
-            <button className="inv-btn-secondary" onClick={() => setShowTransferModal(true)}>
-              Transfer Funds
-            </button>
             <button className="inv-btn-primary" onClick={() => setShowAddModal(true)}>
               Add Investment
             </button>
@@ -183,49 +162,7 @@ export default function InvestmentsPage() {
               {totalPL >= 0 ? "+" : ""}{plPercentage.toFixed(2)}%
             </p>
           </div>
-          <div className="inv-summary-card">
-            <p className="inv-summary-label">Profile Total</p>
-            <p className="inv-summary-value">{formatCurrency(profile ? parseFloat(profile.investments_total) : 0)}</p>
-            <p className="inv-summary-sub" style={{ fontSize: 11, color: "var(--text-3)" }}>
-              From setup wizard
-            </p>
-          </div>
         </div>
-
-        {/* Allocation Status */}
-        {allocation && (
-          <div className="inv-allocation-card">
-            <div className="inv-allocation-header">
-              <div>
-                <p className="inv-allocation-title">Investment Allocation</p>
-                <p className="inv-allocation-sub">
-                  {allocation.is_balanced ? "✓ Balanced" : "⚠ Mismatch"}
-                </p>
-              </div>
-              <div className="inv-allocation-status" style={{
-                color: allocation.is_balanced ? "var(--success)" : "var(--error)",
-              }}>
-                {formatCurrency(totalInvested)} / {formatCurrency(parseFloat(allocation.total_allocated))}
-              </div>
-            </div>
-            <div className="inv-allocation-progress">
-              <div className="inv-allocation-bar">
-                <div
-                  className="inv-allocation-fill"
-                  style={{
-                    width: `${Math.min((totalInvested / parseFloat(allocation.total_allocated)) * 100, 100)}%`,
-                    background: allocation.is_balanced ? "var(--success)" : "var(--error)",
-                  }}
-                />
-              </div>
-            </div>
-            {!allocation.is_balanced && (
-              <p className="inv-allocation-warning">
-                Individual investments don't match setup total. Please adjust to balance.
-              </p>
-            )}
-          </div>
-        )}
 
         {/* Investments List */}
         <div className="inv-list-card">
@@ -328,20 +265,6 @@ export default function InvestmentsPage() {
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddInvestment}
-          totalInvested={totalInvested}
-          totalAllocated={allocation ? parseFloat(allocation.total_allocated) : 0}
-        />
-
-        <TransferModal
-          isOpen={showTransferModal}
-          onClose={() => setShowTransferModal(false)}
-        />
-
-        <InvestmentAllocationModal
-          isOpen={showAllocationModal}
-          onClose={() => setShowAllocationModal(false)}
-          onSubmit={handleSaveAllocations}
-          totalAllocated={profile ? parseFloat(profile.investments_total) : 0}
         />
       </div>
     </>
@@ -517,7 +440,7 @@ const INVESTMENTS_STYLES = `
 
   .inv-summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
   .inv-summary-card {

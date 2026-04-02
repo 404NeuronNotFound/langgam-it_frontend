@@ -1,23 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { usePriceData } from "@/hooks/usePriceData";
 import type { InvestmentCreate } from "@/types/investment";
 
 interface AddInvestmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: InvestmentCreate) => Promise<void>;
-  totalInvested?: number;
-  totalAllocated?: number;
 }
 
-export default function AddInvestmentModal({ 
-  isOpen, 
-  onClose, 
-  onSubmit,
-  totalInvested = 0,
-  totalAllocated = 0,
-}: AddInvestmentModalProps) {
+export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInvestmentModalProps) {
   const [formData, setFormData] = useState<InvestmentCreate>({
     name: "",
     type: "stocks",
@@ -26,34 +19,31 @@ export default function AddInvestmentModal({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const { price, isLoading: isPriceLoading, fetchPrice } = usePriceData();
 
   if (!isOpen) return null;
+
+  async function handleFetchPrice() {
+    if (!formData.name.trim()) {
+      setError("Please enter investment symbol first");
+      return;
+    }
+    await fetchPrice(formData.name, formData.type);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      setError("Please enter investment name");
+      setError("Please enter investment symbol");
       return;
     }
     if (formData.total_invested <= 0) {
       setError("Please enter a valid invested amount");
       return;
     }
-    if (formData.current_value <= 0) {
-      setError("Please enter a valid current value");
-      return;
-    }
-
-    // Check if adding this investment would exceed allocation
-    const remainingAllocation = totalAllocated - totalInvested;
-    if (formData.total_invested > remainingAllocation) {
-      setError(
-        `Cannot add investment. Remaining allocation: ₱${remainingAllocation.toLocaleString("en-PH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}. Please transfer more funds from savings to increase allocation.`
-      );
+    if (!price) {
+      setError("Please fetch the current price first");
       return;
     }
 
@@ -61,7 +51,14 @@ export default function AddInvestmentModal({
     setError("");
     
     try {
-      await onSubmit(formData);
+      // Auto-calculate current value based on fetched price
+      const currentValue = formData.total_invested; // In PHP, same as invested amount initially
+      
+      await onSubmit({
+        ...formData,
+        current_value: currentValue,
+      });
+      
       // Reset form
       setFormData({
         name: "",
@@ -101,42 +98,52 @@ export default function AddInvestmentModal({
           </div>
 
           <form className="aim-body" onSubmit={handleSubmit}>
-            {/* Allocation Info */}
-            {totalAllocated > 0 && (
-              <div className="aim-allocation-info">
-                <div className="aim-allocation-row">
-                  <span className="aim-allocation-label">Total Allocated:</span>
-                  <span className="aim-allocation-value">
-                    ₱{totalAllocated.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className="aim-field">
+              <label className="aim-label" htmlFor="name">Investment Symbol</label>
+              <div className="aim-input-group">
+                <input
+                  id="name"
+                  type="text"
+                  className="aim-input"
+                  placeholder="e.g., BTC, ETH, AAPL"
+                  value={formData.name}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    setError("");
+                  }}
+                  disabled={isSubmitting || isPriceLoading}
+                />
+                {formData.type === "crypto" && (
+                  <button
+                    type="button"
+                    className="aim-fetch-btn"
+                    onClick={handleFetchPrice}
+                    disabled={isPriceLoading || !formData.name.trim()}
+                  >
+                    {isPriceLoading ? "Fetching..." : "Fetch Price"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {price && (
+              <div className="aim-price-info">
+                <div className="aim-price-row">
+                  <span className="aim-price-label">{price.name} Current Price:</span>
+                  <span className="aim-price-value">
+                    ₱{price.currentPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="aim-allocation-row">
-                  <span className="aim-allocation-label">Already Invested:</span>
-                  <span className="aim-allocation-value">
-                    ₱{totalInvested.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="aim-allocation-row" style={{ borderTop: "0.5px solid var(--border-md)", paddingTop: "8px", marginTop: "8px" }}>
-                  <span className="aim-allocation-label" style={{ fontWeight: 600 }}>Remaining:</span>
-                  <span className="aim-allocation-value" style={{ fontWeight: 600, color: (totalAllocated - totalInvested) > 0 ? "var(--success)" : "var(--error)" }}>
-                    ₱{(totalAllocated - totalInvested).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
+                {price.changePercent24h !== undefined && (
+                  <div className="aim-price-row">
+                    <span className="aim-price-label">24h Change:</span>
+                    <span className="aim-price-value" style={{ color: price.changePercent24h >= 0 ? "var(--success)" : "var(--error)" }}>
+                      {price.changePercent24h >= 0 ? "+" : ""}{price.changePercent24h.toFixed(2)}%
+                    </span>
+                  </div>
+                )}
               </div>
             )}
-
-            <div className="aim-field">
-              <label className="aim-label" htmlFor="name">Investment Name</label>
-              <input
-                id="name"
-                type="text"
-                className="aim-input"
-                placeholder="e.g., Apple Inc. (AAPL)"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                disabled={isSubmitting}
-              />
-            </div>
 
             <div className="aim-field">
               <label className="aim-label" htmlFor="type">Type</label>
@@ -148,16 +155,12 @@ export default function AddInvestmentModal({
                 disabled={isSubmitting}
               >
                 <option value="stocks">Stocks</option>
-                <option value="crypto">Crypto</option>
-                <option value="real_estate">Real Estate</option>
-                <option value="bonds">Bonds</option>
-                <option value="mutual_funds">Mutual Funds</option>
-                <option value="other">Other</option>
+                <option value="crypto">Cryptocurrency</option>
               </select>
             </div>
 
             <div className="aim-field">
-              <label className="aim-label" htmlFor="invested">Total Invested</label>
+              <label className="aim-label" htmlFor="invested">Amount Invested (₱)</label>
               <input
                 id="invested"
                 type="number"
@@ -168,21 +171,26 @@ export default function AddInvestmentModal({
                 onChange={(e) => setFormData({ ...formData, total_invested: parseFloat(e.target.value) || 0 })}
                 disabled={isSubmitting}
               />
+              <p className="aim-hint">Enter how much you invested in Philippine Peso</p>
             </div>
 
-            <div className="aim-field">
-              <label className="aim-label" htmlFor="current">Current Value</label>
-              <input
-                id="current"
-                type="number"
-                step="0.01"
-                className="aim-input"
-                placeholder="0.00"
-                value={formData.current_value || ""}
-                onChange={(e) => setFormData({ ...formData, current_value: parseFloat(e.target.value) || 0 })}
-                disabled={isSubmitting}
-              />
-            </div>
+            {price && (
+              <div className="aim-current-value">
+                <p className="aim-current-label">Current Value (Auto-calculated)</p>
+                <div className="aim-current-display">
+                  <p className="aim-current-price">₱{price.currentPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="aim-current-sub">per {formData.name.toUpperCase()}</p>
+                </div>
+                {formData.total_invested > 0 && (
+                  <div className="aim-calculation">
+                    <p className="aim-calc-label">Your Holdings:</p>
+                    <p className="aim-calc-value">
+                      {(formData.total_invested / price.currentPrice).toFixed(8)} {formData.name.toUpperCase()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {error && <p className="aim-error">{error}</p>}
 
@@ -298,32 +306,153 @@ const MODAL_STYLES = `
     gap: 1rem;
   }
 
-  .aim-allocation-info {
-    background: var(--bg-surface);
-    border: 0.5px solid var(--border-md);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    margin-bottom: 8px;
-  }
-  .aim-allocation-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    padding: 6px 0;
-  }
-  .aim-allocation-label {
-    color: var(--text-3);
-  }
-  .aim-allocation-value {
-    color: var(--text-1);
-    font-weight: 500;
-  }
-
   .aim-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .aim-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .aim-input-group .aim-input {
+    flex: 1;
+  }
+
+  .aim-fetch-btn {
+    height: 44px;
+    padding: 0 12px;
+    background: var(--text-1);
+    color: var(--bg-card);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+
+  .aim-fetch-btn:hover:not(:disabled) {
+    opacity: 0.82;
+  }
+
+  .aim-fetch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .aim-price-info {
+    background: var(--bg-surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .aim-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  .aim-price-label {
+    color: var(--text-3);
+  }
+
+  .aim-price-value {
+    color: var(--text-1);
+    font-weight: 600;
+  }
+
+  .aim-use-price-btn {
+    height: 36px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .aim-use-price-btn:hover {
+    opacity: 0.82;
+  }
+
+  .aim-use-price-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .aim-hint {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: -2px;
+  }
+
+  .aim-current-value {
+    background: var(--bg-surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .aim-current-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
+  }
+
+  .aim-current-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .aim-current-price {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .aim-current-sub {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .aim-calculation {
+    border-top: 0.5px solid var(--border-md);
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .aim-calc-label {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .aim-calc-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-1);
+    font-family: monospace;
   }
   .aim-label {
     font-size: 13px;

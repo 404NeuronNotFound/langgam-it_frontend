@@ -11,8 +11,19 @@ export async function getInvestments(): Promise<Investment[]> {
 }
 
 export async function createInvestment(payload: InvestmentCreate): Promise<Investment> {
-  const { data } = await apiClient.post<Investment>("/investments/", payload);
-  return data;
+  try {
+    const { data } = await apiClient.post<Investment>("/investments/", payload);
+    return data;
+  } catch (error: any) {
+    // Log the full error response for debugging
+    console.error("Investment creation error:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      payload,
+    });
+    throw error;
+  }
 }
 
 export async function updateInvestment(id: number, payload: InvestmentUpdate): Promise<Investment> {

@@ -58,6 +58,8 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
       } else {
         await transferToSavings(transferAmount);
       }
+      // Refresh profile to update available pool in frontend
+      await useFinanceStore.getState().fetchProfile();
       setAmount("");
       onClose();
     } catch (err: any) {

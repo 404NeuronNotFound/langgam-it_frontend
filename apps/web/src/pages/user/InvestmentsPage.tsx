@@ -2,24 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useInvestmentStore } from "../../store/investmentStore";
+import { useFinanceStore } from "../../store/financeStore";
 import AddInvestmentModal from "../../components/AddInvestmentModal";
+import TransferModal from "../../components/TransferModal";
 import type { InvestmentCreate } from "@/types/investment";
 
 export default function InvestmentsPage() {
   const { investments, fetchInvestments, addInvestment, editInvestment, isLoading, error } = useInvestmentStore();
+  const { profile, fetchProfile } = useFinanceStore();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   useEffect(() => {
     fetchInvestments();
-  }, [fetchInvestments]);
+    fetchProfile();
+  }, [fetchInvestments, fetchProfile]);
 
   // Calculate totals
   const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.total_invested), 0);
   const totalCurrent = investments.reduce((sum, inv) => sum + parseFloat(inv.current_value), 0);
   const totalPL = totalCurrent - totalInvested;
   const plPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+
+  // Available investment pool = profile.investments_total - already invested
+  const availableInvestmentPool = profile 
+    ? parseFloat(profile.investments_total) - totalInvested 
+    : 0;
 
   function formatCurrency(val: number | string) {
     const num = typeof val === "string" ? parseFloat(val) : val;
@@ -131,6 +141,9 @@ export default function InvestmentsPage() {
             <p className="inv-subtitle">Track your assets and portfolio performance</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
+            <button className="inv-btn-secondary" onClick={() => setShowTransferModal(true)}>
+              Transfer from Savings
+            </button>
             <button className="inv-btn-primary" onClick={() => setShowAddModal(true)}>
               Add Investment
             </button>
@@ -160,6 +173,15 @@ export default function InvestmentsPage() {
               style={{ color: totalPL >= 0 ? "var(--success)" : "var(--error)" }}
             >
               {totalPL >= 0 ? "+" : ""}{plPercentage.toFixed(2)}%
+            </p>
+          </div>
+          <div className="inv-summary-card">
+            <p className="inv-summary-label">Available to Invest</p>
+            <p className="inv-summary-value" style={{ color: availableInvestmentPool > 0 ? "var(--success)" : "var(--error)" }}>
+              {formatCurrency(availableInvestmentPool)}
+            </p>
+            <p className="inv-summary-sub">
+              {profile ? `₱${parseFloat(profile.investments_total).toLocaleString("en-PH", { minimumFractionDigits: 2 })} transferred` : "—"}
             </p>
           </div>
         </div>
@@ -265,6 +287,12 @@ export default function InvestmentsPage() {
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddInvestment}
+          availableInvestmentPool={availableInvestmentPool}
+        />
+
+        <TransferModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
         />
       </div>
     </>
@@ -440,7 +468,7 @@ const INVESTMENTS_STYLES = `
 
   .inv-summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
   .inv-summary-card {

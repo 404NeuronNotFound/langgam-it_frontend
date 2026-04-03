@@ -8,9 +8,15 @@ interface AddInvestmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: InvestmentCreate) => Promise<void>;
+  availableInvestmentPool?: number;
 }
 
-export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInvestmentModalProps) {
+export default function AddInvestmentModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit,
+  availableInvestmentPool = 0,
+}: AddInvestmentModalProps) {
   const [formData, setFormData] = useState<InvestmentCreate>({
     name: "",
     type: "stocks",
@@ -42,8 +48,10 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
       setError("Please enter a valid invested amount");
       return;
     }
-    if (!price) {
-      setError("Please fetch the current price first");
+    
+    // For crypto, price fetch is required
+    if (formData.type === "crypto" && !price) {
+      setError("Please fetch the current price for crypto");
       return;
     }
 
@@ -51,8 +59,9 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
     setError("");
     
     try {
-      // Auto-calculate current value based on fetched price
-      const currentValue = formData.total_invested; // In PHP, same as invested amount initially
+      // For crypto with price: use fetched price
+      // For stocks or crypto without price: use invested amount as current value
+      const currentValue = price ? formData.total_invested : formData.total_invested;
       
       await onSubmit({
         ...formData,
@@ -68,7 +77,32 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
       });
       onClose();
     } catch (err: any) {
-      setError(err.message || "Failed to add investment");
+      // Extract error message from backend response
+      let errorMsg = "Failed to add investment";
+      
+      if (err.response?.data) {
+        const data = err.response.data;
+        // Handle different error formats
+        if (typeof data === "string") {
+          errorMsg = data;
+        } else if (data.detail) {
+          errorMsg = data.detail;
+        } else if (data.error) {
+          errorMsg = data.error;
+        } else if (typeof data === "object") {
+          // Handle field-specific errors
+          const firstError = Object.values(data)[0];
+          if (Array.isArray(firstError)) {
+            errorMsg = firstError[0];
+          } else if (typeof firstError === "string") {
+            errorMsg = firstError;
+          }
+        }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -98,6 +132,16 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
           </div>
 
           <form className="aim-body" onSubmit={handleSubmit}>
+            {availableInvestmentPool > 0 && (
+              <div className="aim-pool-info">
+                <p className="aim-pool-label">Available Investment Pool</p>
+                <p className="aim-pool-value">
+                  ₱{availableInvestmentPool.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="aim-pool-sub">Transferred from savings. Use this to invest in stocks or crypto.</p>
+              </div>
+            )}
+
             <div className="aim-field">
               <label className="aim-label" htmlFor="name">Investment Symbol</label>
               <div className="aim-input-group">
@@ -124,6 +168,9 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
                   </button>
                 )}
               </div>
+              {formData.type === "stocks" && (
+                <p className="aim-hint">Enter stock symbol (e.g., AAPL, MSFT). Price fetch requires manual entry.</p>
+              )}
             </div>
 
             {price && (
@@ -192,7 +239,16 @@ export default function AddInvestmentModal({ isOpen, onClose, onSubmit }: AddInv
               </div>
             )}
 
-            {error && <p className="aim-error">{error}</p>}
+            {error && (
+              <div className="aim-error-box">
+                <p className="aim-error">{error}</p>
+                {error.includes("exceeds available investment budget") && (
+                  <p className="aim-error-hint">
+                    💡 Tip: Click "Transfer from Savings" to add more funds to your investment budget.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="aim-footer">
               <button
@@ -304,6 +360,35 @@ const MODAL_STYLES = `
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .aim-pool-info {
+    background: var(--bg-surface);
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .aim-pool-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
+  }
+
+  .aim-pool-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .aim-pool-sub {
+    font-size: 11px;
+    color: var(--text-3);
   }
 
   .aim-field {
@@ -486,6 +571,26 @@ const MODAL_STYLES = `
     font-size: 12px;
     color: var(--error);
     margin-top: -4px;
+  }
+
+  .aim-error-box {
+    background: var(--error-bg);
+    border: 0.5px solid var(--error);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .aim-error-box .aim-error {
+    margin: 0;
+  }
+
+  .aim-error-hint {
+    font-size: 11px;
+    color: var(--error);
+    margin: 0;
   }
 
   .aim-footer {

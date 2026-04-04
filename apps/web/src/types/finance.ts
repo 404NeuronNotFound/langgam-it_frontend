@@ -17,8 +17,13 @@ export interface NetWorthSnapshot {
   id: number;
   profile: number;
   net_worth: string;
-  snapshot_date: string;
+  captured_at: string;
   created_at: string;
+  emergency_fund?: string;
+  savings?: string;
+  investments_total?: string;
+  rigs_fund?: string;
+  cash_on_hand?: string;
 }
 
 export interface FinancialProfileUpdate {

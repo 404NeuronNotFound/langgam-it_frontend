@@ -142,15 +142,17 @@ export default function ExpensesPage() {
     );
   }
 
-  // Show message if no cycle exists
-  if (!currentCycle && !storeLoading) {
+  // Show message if no cycle exists AND no cash on hand
+  const cashOnHand = profile ? parseFloat(profile.cash_on_hand) : 0;
+  
+  if (!currentCycle && !storeLoading && cashOnHand === 0) {
     return (
       <>
         <style>{EXPENSES_STYLES}</style>
         <div className="exp-root">
           <div className="exp-header">
             <h1 className="exp-title">Expenses</h1>
-            <p className="exp-subtitle">No active cycle found. Add income to start tracking expenses.</p>
+            <p className="exp-subtitle">No active cycle and no cash on hand. Add income or cash to start tracking expenses.</p>
           </div>
         </div>
       </>

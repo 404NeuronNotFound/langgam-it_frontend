@@ -23,8 +23,16 @@ export default function Dashboard() {
   const firstName = user?.first_name || user?.username || "there";
 
   // Calculate net worth from latest snapshot
+  // Backend returns newest first, so snapshots[0] is the most recent
   const latestSnapshot = snapshots[0];
   const netWorth = latestSnapshot ? parseFloat(latestSnapshot.net_worth) : 0;
+  
+  // Debug log
+  console.log("Dashboard - Snapshots received:", {
+    count: snapshots.length,
+    first: snapshots[0],
+    last: snapshots[snapshots.length - 1],
+  });
 
   // Get bucket data from profile
   const bucketData = {
@@ -35,28 +43,47 @@ export default function Dashboard() {
     cash_on_hand: profile ? parseFloat(profile.cash_on_hand) : 0,
   };
 
-  // Transform snapshots for chart
-  const history = snapshots.map((s: { snapshot_date: any; net_worth: string; }) => {
-    // Parse the date - handle both ISO format and YYYY-MM-DD format
-    let dateStr = s.snapshot_date;
-    // If it's just YYYY-MM-DD, add time to make it valid ISO
-    if (dateStr && !dateStr.includes('T')) {
-      dateStr = dateStr + 'T00:00:00';
-    }
-    
-    const date = new Date(dateStr);
-    const month = !isNaN(date.getTime()) 
-      ? date.toLocaleDateString("en-US", {
-          month: "short",
-          year: "numeric",
-        })
-      : "Unknown";
-    
-    return {
-      month,
-      net_worth: parseFloat(s.net_worth),
-    };
-  }).reverse();
+  // Transform snapshots for chart - deduplicate by day, keep only latest per day
+  const historyByDay = new Map<string, { net_worth: number; timestamp: number; month: string }>();
+  
+  snapshots
+    .filter((s: any) => s.captured_at && s.net_worth)
+    .forEach((s: { captured_at: any; net_worth: string; }) => {
+      let dateStr = s.captured_at;
+      if (dateStr && !dateStr.includes('T')) {
+        dateStr = dateStr + 'T00:00:00';
+      }
+      
+      const date = new Date(dateStr);
+      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      const month = !isNaN(date.getTime()) 
+        ? date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : "Unknown";
+      
+      const netWorth = parseFloat(s.net_worth);
+      const timestamp = date.getTime();
+      
+      // Keep only the latest snapshot for each day
+      const existing = historyByDay.get(dayKey);
+      if (!existing || timestamp > existing.timestamp) {
+        historyByDay.set(dayKey, { net_worth: netWorth, timestamp, month });
+      }
+    });
+
+  // Convert map to array and sort by timestamp
+  const history = Array.from(historyByDay.values())
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .map(({ timestamp, ...rest }) => rest);
+
+  // Debug: log the deduplicated data
+  console.log("Deduplicated chart data:", {
+    originalCount: snapshots.length,
+    deduplicatedCount: history.length,
+    data: history,
+  });
 
   const currency = profile?.currency || "PHP";
 
@@ -190,7 +217,7 @@ export default function Dashboard() {
           <div className="db-chart-header">
             <div>
               <p className="db-chart-title">Net worth over time</p>
-              <p className="db-chart-sub">Monthly snapshots of all your assets combined</p>
+              <p className="db-chart-sub">Daily snapshots of all your assets combined</p>
             </div>
           </div>
           <div className="db-chart-body">

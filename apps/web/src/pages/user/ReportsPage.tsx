@@ -17,7 +17,7 @@ import {
 
 export default function ReportsPage() {
   const { reportData, fetchReports, isLoading, error } = useReportStore();
-  const [timeRange, setTimeRange] = useState<"6m" | "1y" | "all">("6m");
+  const [timeRange, setTimeRange] = useState<"1m" | "6m" | "1y" | "all">("1m");
 
   useEffect(() => {
     fetchReports();
@@ -100,6 +100,12 @@ export default function ReportsPage() {
             <p className="rep-subtitle">Analyze your financial trends and performance</p>
           </div>
           <div className="rep-time-selector">
+            <button
+              className={`rep-time-btn ${timeRange === "1m" ? "active" : ""}`}
+              onClick={() => setTimeRange("1m")}
+            >
+              Monthly
+            </button>
             <button
               className={`rep-time-btn ${timeRange === "6m" ? "active" : ""}`}
               onClick={() => setTimeRange("6m")}

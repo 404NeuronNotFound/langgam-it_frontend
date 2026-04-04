@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -10,12 +11,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// ------------------------------------------------------------------
-// Langgam-It — NetWorthChart
-// Recharts line chart — consistent design tokens
-// Props: data (array of { month: string, net_worth: number })
-// ------------------------------------------------------------------
-
 interface DataPoint {
   month: string;
   net_worth: number;
@@ -25,13 +20,12 @@ interface Props {
   data: DataPoint[];
 }
 
-// Custom tooltip
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const val: number = payload[0].value;
   return (
     <div style={tooltipStyle}>
-      <p style={tooltipLabel}>{label}</p>
+      <p style={tooltipLabel}>{payload[0].payload.month}</p>
       <p style={tooltipValue}>
         {new Intl.NumberFormat("en-PH", {
           style: "currency",
@@ -44,6 +38,13 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export default function NetWorthChart({ data }: Props) {
+  const [chartKey, setChartKey] = useState(0);
+
+  useEffect(() => {
+    // Force re-render when data changes
+    setChartKey(prev => prev + 1);
+  }, [data]);
+
   if (!data || data.length === 0) {
     return (
       <div style={emptyStyle}>
@@ -60,82 +61,87 @@ export default function NetWorthChart({ data }: Props) {
     );
   }
 
-  // Responsive height based on screen size
-  const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 280 : 220;
+  // Get min and max values
+  const values = data.map(d => d.net_worth);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  // Set explicit domain - no padding, just use actual min/max
+  const yMin = Math.floor(minValue / 10000) * 10000; // Round down to nearest 10k
+  const yMax = Math.ceil(maxValue / 10000) * 10000;  // Round up to nearest 10k
+
+  const chartHeight = 280;
 
   return (
-    <ResponsiveContainer width="100%" height={chartHeight}>
-      <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={chartHeight} key={chartKey}>
+      <LineChart
+        data={data}
+        margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+      >
         <CartesianGrid
-          strokeDasharray="4 4"
+          strokeDasharray="3 3"
           stroke="var(--border)"
           vertical={false}
         />
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 11, fill: "var(--text-3)", fontFamily: "inherit" }}
+          tick={{ fontSize: 12, fill: "var(--text-3)" }}
           axisLine={false}
           tickLine={false}
-          dy={6}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "var(--text-3)", fontFamily: "inherit" }}
+          type="number"
+          domain={[yMin, yMax]}
+          tick={{ fontSize: 12, fill: "var(--text-3)" }}
           axisLine={false}
           tickLine={false}
-          dx={-4}
-          tickFormatter={(v) =>
-            new Intl.NumberFormat("en-PH", {
-              notation: "compact",
-              compactDisplay: "short",
-              currency: "PHP",
-              style: "currency",
-            }).format(v)
+          width={70}
+          tickFormatter={(value) =>
+            `₱${(value / 1000).toFixed(0)}K`
           }
-          width={64}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border-md)", strokeWidth: 1 }} />
+        <Tooltip content={<CustomTooltip />} />
         <Line
-          type="monotone"
+          type="linear"
           dataKey="net_worth"
           stroke="var(--text-1)"
-          strokeWidth={1.5}
-          dot={{ r: 3, fill: "var(--bg-card)", stroke: "var(--text-1)", strokeWidth: 1.5 }}
-          activeDot={{ r: 4, fill: "var(--text-1)", strokeWidth: 0 }}
+          strokeWidth={2}
+          dot={{ fill: "var(--text-1)", r: 4 }}
+          activeDot={{ r: 6 }}
+          isAnimationActive={false}
         />
       </LineChart>
     </ResponsiveContainer>
   );
 }
 
-// ── Inline styles (no className conflicts) ────────────────────────
-
 const tooltipStyle: React.CSSProperties = {
   background: "var(--bg-card)",
-  border: "0.5px solid var(--border-md)",
+  border: "1px solid var(--border-md)",
   borderRadius: 8,
-  padding: "8px 12px",
-  fontFamily: "inherit",
-  boxShadow: "none",
+  padding: "10px 12px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
 };
 
 const tooltipLabel: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: 12,
   color: "var(--text-3)",
-  marginBottom: 2,
+  marginBottom: 4,
 };
 
 const tooltipValue: React.CSSProperties = {
   fontSize: 14,
-  fontWeight: 500,
+  fontWeight: 600,
   color: "var(--text-1)",
+  margin: 0,
 };
 
 const emptyStyle: React.CSSProperties = {
-  height: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 280 : 220,
+  height: 280,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: 4,
+  gap: 8,
   textAlign: "center",
 };

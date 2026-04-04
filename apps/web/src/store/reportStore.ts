@@ -7,11 +7,13 @@ import { getReports, closeMonth } from "@/api/report";
 interface ReportState {
   reportData: ReportData | null;
   monthSummary: MonthSummary | null;
+  timeRange: "1m" | "6m" | "1y" | "all";
   isLoading: boolean;
   error: string | null;
 
   // Actions
-  fetchReports: () => Promise<void>;
+  fetchReports: (timeRange?: "1m" | "6m" | "1y" | "all") => Promise<void>;
+  setTimeRange: (range: "1m" | "6m" | "1y" | "all") => void;
   closeCurrentMonth: () => Promise<MonthSummary>;
   reset: () => void;
 }
@@ -19,13 +21,14 @@ interface ReportState {
 export const useReportStore = create<ReportState>((set) => ({
   reportData: null,
   monthSummary: null,
+  timeRange: "6m",
   isLoading: false,
   error: null,
 
-  fetchReports: async () => {
-    set({ isLoading: true, error: null });
+  fetchReports: async (timeRange = "6m") => {
+    set({ isLoading: true, error: null, timeRange });
     try {
-      const reportData = await getReports();
+      const reportData = await getReports(timeRange);
       console.log("Reports data received:", reportData);
       set({ reportData, isLoading: false });
     } catch (error: any) {
@@ -33,6 +36,8 @@ export const useReportStore = create<ReportState>((set) => ({
       set({ error: error.message || "Failed to fetch reports", isLoading: false });
     }
   },
+
+  setTimeRange: (range) => set({ timeRange: range }),
 
   closeCurrentMonth: async () => {
     set({ isLoading: true, error: null });
@@ -50,6 +55,7 @@ export const useReportStore = create<ReportState>((set) => ({
     set({
       reportData: null,
       monthSummary: null,
+      timeRange: "6m",
       isLoading: false,
       error: null,
     });

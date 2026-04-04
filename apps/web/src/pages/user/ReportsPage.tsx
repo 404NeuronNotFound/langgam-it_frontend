@@ -20,8 +20,8 @@ export default function ReportsPage() {
   const [timeRange, setTimeRange] = useState<"1m" | "6m" | "1y" | "all">("1m");
 
   useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+    fetchReports(timeRange);
+  }, [timeRange, fetchReports]);
 
   function formatCurrency(val: number) {
     return new Intl.NumberFormat("en-PH", {

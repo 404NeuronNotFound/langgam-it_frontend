@@ -3,9 +3,11 @@
 import { apiClient } from "./client";
 import type { ReportData, MonthSummary } from "@/types/report";
 
-// Get reports data
-export async function getReports(): Promise<ReportData> {
-  const response = await apiClient.get("/reports/");
+// Get reports data with optional time range
+export async function getReports(timeRange: "1m" | "6m" | "1y" | "all" = "6m"): Promise<ReportData> {
+  const response = await apiClient.get("/reports/", {
+    params: { time_range: timeRange }
+  });
   return response.data;
 }
 

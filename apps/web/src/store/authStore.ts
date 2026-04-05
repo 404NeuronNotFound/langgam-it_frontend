@@ -8,8 +8,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AxiosError } from "axios";
 
-import { login as apiLogin, logoutCleanup, getMe } from "../api/auth";
-import type { AuthState, LoginPayload, APIError, User } from "../types/auth";
+import { login as apiLogin, logoutCleanup, getMe, updateProfile as apiUpdateProfile, changePassword as apiChangePassword } from "../api/auth";
+import type { AuthState, LoginPayload, APIError, User, UpdateProfilePayload, ChangePasswordPayload } from "../types/auth";
 
 // ── Helper: extract a readable error message from DRF errors ──────
 function parseError(error: unknown): string {
@@ -38,6 +38,8 @@ interface AuthActions {
   login: (payload: LoginPayload) => Promise<void>;
   logout: () => void;
   hydrateUser: () => Promise<void>;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<void>;
+  changePassword: (payload: ChangePasswordPayload) => Promise<void>;
   clearError: () => void;
 }
 
@@ -117,6 +119,36 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 
       // ── Clear error ────────────────────────────────────────────
       clearError: () => set({ error: null }),
+
+      // ── Update profile ────────────────────────────────────────
+      updateProfile: async (payload: UpdateProfilePayload) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await apiUpdateProfile(payload);
+          set({ user: updatedUser, isLoading: false });
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: parseError(error),
+          });
+          throw error;
+        }
+      },
+
+      // ── Change password ───────────────────────────────────────
+      changePassword: async (payload: ChangePasswordPayload) => {
+        set({ isLoading: true, error: null });
+        try {
+          await apiChangePassword(payload);
+          set({ isLoading: false });
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: parseError(error),
+          });
+          throw error;
+        }
+      },
     }),
     {
       name: "langgam-it-auth",          // localStorage key

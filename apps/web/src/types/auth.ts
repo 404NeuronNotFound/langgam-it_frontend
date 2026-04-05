@@ -56,3 +56,17 @@ export interface APIError {
   detail?: string;
   [field: string]: string | string[] | undefined;
 }
+
+// ── Profile update payload ────────────────────────────────────────
+export interface UpdateProfilePayload {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+// ── Password change payload ───────────────────────────────────────
+export interface ChangePasswordPayload {
+  old_password: string;
+  new_password: string;
+  confirm_password: string;
+}

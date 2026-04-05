@@ -11,6 +11,8 @@ import type {
   RegisterResponse,
   TokenResponse,
   User,
+  UpdateProfilePayload,
+  ChangePasswordPayload,
 } from "../types/auth";
 
 // ── Login ─────────────────────────────────────────────────────────
@@ -56,4 +58,29 @@ export async function getMe(): Promise<User> {
 export function logoutCleanup(): void {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+}
+
+// ── Update profile ────────────────────────────────────────────────
+// PATCH /api/auth/profile/
+// Updates user profile (first_name, last_name, email).
+
+export async function updateProfile(
+  payload: UpdateProfilePayload
+): Promise<User> {
+  const { data } = await apiClient.patch<User>("/auth/profile/", payload);
+  return data;
+}
+
+// ── Change password ───────────────────────────────────────────────
+// POST /api/auth/change-password/
+// Changes user password. Requires old_password for verification.
+
+export async function changePassword(
+  payload: ChangePasswordPayload
+): Promise<{ detail: string }> {
+  const { data } = await apiClient.post<{ detail: string }>(
+    "/auth/change-password/",
+    payload
+  );
+  return data;
 }

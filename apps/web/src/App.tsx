@@ -6,6 +6,7 @@ import { useAuthStore } from "./store/authStore";
 import { useFinanceStore } from "./store/financeStore";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import SettingsPage from "./pages/Settings";
 import Layout from "./layouts/Layout";
 import SetupWizard from "./pages/user/SetupWizard";
 import Dashboard from "./pages/user/Dashboard";
@@ -80,9 +81,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
-
-// ── Placeholder pages ─────────────────────────────────────────────
-function SettingsPage()    { return <div style={{ fontFamily: "system-ui" }}><h1>Settings</h1></div>; }
 
 // ── App ───────────────────────────────────────────────────────────
 export default function App() {

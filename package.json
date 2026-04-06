@@ -2,7 +2,7 @@
   "name": "langgam-it",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@10.x",
+  "packageManager": "npm@10.5.0",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",

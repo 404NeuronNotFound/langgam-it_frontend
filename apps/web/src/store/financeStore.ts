@@ -59,12 +59,12 @@ export const useFinanceStore = create<FinanceState>((set) => ({
     }
   },
 
-  isSetupComplete: () => {
+  isSetupComplete: (): boolean => {
     const { profile } = useFinanceStore.getState();
     if (!profile) return false;
     
     // Check if any bucket has a value > 0
-    const hasValues = 
+    const hasValues: boolean = 
       parseFloat(profile.emergency_fund) > 0 ||
       parseFloat(profile.savings) > 0 ||
       parseFloat(profile.rigs_fund) > 0 ||

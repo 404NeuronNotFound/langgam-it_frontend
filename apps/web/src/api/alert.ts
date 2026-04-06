@@ -16,6 +16,6 @@ export async function markAlertAsRead(alertId: number): Promise<Alert> {
 }
 
 // Get unread alerts count
-export async function getUnreadAlertsCount(alerts: Alert[]): number {
+export async function getUnreadAlertsCount(alerts: Alert[]): Promise<number> {
   return alerts.filter((alert) => !alert.is_read).length;
 }

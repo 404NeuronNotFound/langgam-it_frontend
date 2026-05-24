@@ -1,86 +1,60 @@
-// api/auth.ts
+// src/api/auth.ts
 //
-// All auth-related API calls.
-// Each function returns typed data or throws an AxiosError
-// that the store/component can catch and surface to the user.
+// Authentication API calls.
+// All functions return typed data or throw AxiosError.
+// Error parsing is handled by the calling store, not here.
+//
+// Endpoints:
+//   POST /api/auth/token/          → login
+//   POST /api/auth/register/       → register
+//   GET  /api/auth/me/             → getMe
+//   POST /api/auth/token/refresh/  → refreshToken (plain axios)
+//   —    (client-side only)        → logout
 
-import { apiClient } from "./client";
-import type {
-  LoginPayload,
-  RegisterPayload,
-  RegisterResponse,
-  TokenResponse,
-  User,
-  UpdateProfilePayload,
-  ChangePasswordPayload,
-} from "../types/auth";
+import axios from "axios"
+import { apiClient } from "./client"
+import { clearTokens } from "./client"
+import type { User, AuthTokens, LoginPayload, RegisterPayload } from "../types"
 
-// ── Login ─────────────────────────────────────────────────────────
-// POST /api/auth/token/
-// Returns access token, refresh token, and basic user info.
+const BASE_URL = (
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+).replace(/\/$/, "")
 
-export async function login(payload: LoginPayload): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>(
-    "/auth/token/",
-    payload
-  );
-  return data;
+// ── 1. Login ──────────────────────────────────────────────────────────
+export async function login(payload: LoginPayload): Promise<AuthTokens> {
+  const { data } = await apiClient.post<AuthTokens>("/auth/token/", payload)
+  return data
 }
 
-// ── Register ──────────────────────────────────────────────────────
-// POST /api/auth/register/
-// Creates a new account. Does NOT return tokens — call login() after.
-
+// ── 2. Register ───────────────────────────────────────────────────────
 export async function register(
-  payload: RegisterPayload
-): Promise<RegisterResponse> {
-  const { data } = await apiClient.post<RegisterResponse>(
+  payload: RegisterPayload,
+): Promise<{ message: string; user: User }> {
+  const { data } = await apiClient.post<{ message: string; user: User }>(
     "/auth/register/",
-    payload
-  );
-  return data;
+    payload,
+  )
+  return data
 }
 
-// ── Get current user ──────────────────────────────────────────────
-// GET /api/auth/me/
-// Requires a valid access token (attached automatically by the interceptor).
-
+// ── 3. Get current user ───────────────────────────────────────────────
 export async function getMe(): Promise<User> {
-  const { data } = await apiClient.get<User>("/auth/me/");
-  return data;
+  const { data } = await apiClient.get<User>("/auth/me/")
+  return data
 }
 
-// ── Logout (client-side only) ─────────────────────────────────────
-// Simple JWT has no server-side logout endpoint by default.
-// Tokens are cleared from localStorage; the refresh token becomes
-// invalid after its lifetime (1 day) or if blacklisting is enabled.
-
-export function logoutCleanup(): void {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
+// ── 4. Refresh token (plain axios — bypasses interceptor) ─────────────
+export async function refreshToken(
+  refresh: string,
+): Promise<{ access: string }> {
+  const { data } = await axios.post<{ access: string }>(
+    `${BASE_URL}/auth/token/refresh/`,
+    { refresh },
+  )
+  return data
 }
 
-// ── Update profile ────────────────────────────────────────────────
-// PATCH /api/auth/profile/
-// Updates user profile (first_name, last_name, email).
-
-export async function updateProfile(
-  payload: UpdateProfilePayload
-): Promise<User> {
-  const { data } = await apiClient.patch<User>("/auth/profile/", payload);
-  return data;
-}
-
-// ── Change password ───────────────────────────────────────────────
-// POST /api/auth/change-password/
-// Changes user password. Requires old_password for verification.
-
-export async function changePassword(
-  payload: ChangePasswordPayload
-): Promise<{ detail: string }> {
-  const { data } = await apiClient.post<{ detail: string }>(
-    "/auth/change-password/",
-    payload
-  );
-  return data;
+// ── 5. Logout (client-side only) ──────────────────────────────────────
+export function logout(): void {
+  clearTokens()
 }

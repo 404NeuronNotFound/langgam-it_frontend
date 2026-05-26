@@ -1,43 +1,56 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useInvestmentStore } from "../../store/investmentStore";
-import { useFinanceStore } from "../../store/financeStore";
-import AddInvestmentModal from "../../components/AddInvestmentModal";
-import TransferModal from "../../components/TransferModal";
-import type { InvestmentCreate } from "@/types/investment";
+import { useEffect, useState } from "react"
+import { useInvestmentStore } from "../../store/investmentStore"
+import { useFinanceStore } from "../../store/financeStore"
+import AddInvestmentModal from "../../components/AddInvestmentModal"
+import TransferModal from "../../components/TransferModal"
+import type { InvestmentCreate } from "@/types/investment"
 
 export default function InvestmentsPage() {
-  const { investments, fetchInvestments, addInvestment, editInvestment, isLoading, error } = useInvestmentStore();
-  const { profile, fetchProfile } = useFinanceStore();
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const {
+    investments,
+    fetchInvestments,
+    addInvestment,
+    editInvestment,
+    isLoading,
+    error,
+  } = useInvestmentStore()
+  const { profile, fetchProfile } = useFinanceStore()
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState("")
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showTransferModal, setShowTransferModal] = useState(false)
 
   useEffect(() => {
-    fetchInvestments();
-    fetchProfile();
-  }, [fetchInvestments, fetchProfile]);
+    fetchInvestments()
+    fetchProfile()
+  }, [fetchInvestments, fetchProfile])
 
   // Calculate totals
-  const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.total_invested), 0);
-  const totalCurrent = investments.reduce((sum, inv) => sum + parseFloat(inv.current_value), 0);
-  const totalPL = totalCurrent - totalInvested;
-  const plPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+  const totalInvested = investments.reduce(
+    (sum, inv) => sum + parseFloat(inv.total_invested),
+    0
+  )
+  const totalCurrent = investments.reduce(
+    (sum, inv) => sum + parseFloat(inv.current_value),
+    0
+  )
+  const totalPL = totalCurrent - totalInvested
+  const plPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0
 
   // Available investment pool = profile.investments_total - already invested
-  const availableInvestmentPool = profile 
-    ? parseFloat(profile.investments_total) - totalInvested 
-    : 0;
+  const availableInvestmentPool = profile
+    ? parseFloat(profile.investments_total) - totalInvested
+    : 0
 
   function formatCurrency(val: number | string) {
-    const num = typeof val === "string" ? parseFloat(val) : val;
+    const num = typeof val === "string" ? parseFloat(val) : val
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
       minimumFractionDigits: 2,
-    }).format(num);
+    }).format(num)
   }
 
   function getTypeLabel(type: string) {
@@ -48,8 +61,8 @@ export default function InvestmentsPage() {
       bonds: "Bonds",
       mutual_funds: "Mutual Funds",
       other: "Other",
-    };
-    return labels[type] || type;
+    }
+    return labels[type] || type
   }
 
   function getTypeColor(type: string) {
@@ -60,32 +73,32 @@ export default function InvestmentsPage() {
       bonds: { bg: "var(--amber-bg)", text: "var(--amber-icon)" },
       mutual_funds: { bg: "var(--blue-bg)", text: "var(--blue-icon)" },
       other: { bg: "var(--bg-surface)", text: "var(--text-2)" },
-    };
-    return colors[type] || colors.other;
+    }
+    return colors[type] || colors.other
   }
 
   function handleEditClick(investment: any) {
-    setEditingId(investment.id);
-    setEditValue(investment.current_value);
+    setEditingId(investment.id)
+    setEditValue(investment.current_value)
   }
 
   async function handleSaveEdit(id: number) {
     try {
-      await editInvestment(id, { current_value: parseFloat(editValue) });
-      setEditingId(null);
-      setEditValue("");
+      await editInvestment(id, { current_value: parseFloat(editValue) })
+      setEditingId(null)
+      setEditValue("")
     } catch (error) {
-      console.error("Failed to update investment:", error);
+      console.error("Failed to update investment:", error)
     }
   }
 
   function handleCancelEdit() {
-    setEditingId(null);
-    setEditValue("");
+    setEditingId(null)
+    setEditValue("")
   }
 
   async function handleAddInvestment(data: InvestmentCreate) {
-    await addInvestment(data);
+    await addInvestment(data)
   }
 
   if (error) {
@@ -114,7 +127,7 @@ export default function InvestmentsPage() {
           </button>
         </div>
       </>
-    );
+    )
   }
 
   if (isLoading && investments.length === 0) {
@@ -128,7 +141,7 @@ export default function InvestmentsPage() {
           </div>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -138,13 +151,21 @@ export default function InvestmentsPage() {
         <div className="inv-header">
           <div>
             <h1 className="inv-title">Investments</h1>
-            <p className="inv-subtitle">Track your assets and portfolio performance</p>
+            <p className="inv-subtitle">
+              Track your assets and portfolio performance
+            </p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
-            <button className="inv-btn-secondary" onClick={() => setShowTransferModal(true)}>
+            <button
+              className="inv-btn-secondary"
+              onClick={() => setShowTransferModal(true)}
+            >
               Transfer from Savings
             </button>
-            <button className="inv-btn-primary" onClick={() => setShowAddModal(true)}>
+            <button
+              className="inv-btn-primary"
+              onClick={() => setShowAddModal(true)}
+            >
               Add Investment
             </button>
           </div>
@@ -164,24 +185,39 @@ export default function InvestmentsPage() {
             <p className="inv-summary-label">Profit/Loss</p>
             <p
               className="inv-summary-value"
-              style={{ color: totalPL >= 0 ? "var(--success)" : "var(--error)" }}
+              style={{
+                color: totalPL >= 0 ? "var(--success)" : "var(--error)",
+              }}
             >
               {formatCurrency(totalPL)}
             </p>
             <p
               className="inv-summary-sub"
-              style={{ color: totalPL >= 0 ? "var(--success)" : "var(--error)" }}
+              style={{
+                color: totalPL >= 0 ? "var(--success)" : "var(--error)",
+              }}
             >
-              {totalPL >= 0 ? "+" : ""}{plPercentage.toFixed(2)}%
+              {totalPL >= 0 ? "+" : ""}
+              {plPercentage.toFixed(2)}%
             </p>
           </div>
           <div className="inv-summary-card">
             <p className="inv-summary-label">Available to Invest</p>
-            <p className="inv-summary-value" style={{ color: availableInvestmentPool > 0 ? "var(--success)" : "var(--error)" }}>
+            <p
+              className="inv-summary-value"
+              style={{
+                color:
+                  availableInvestmentPool > 0
+                    ? "var(--success)"
+                    : "var(--error)",
+              }}
+            >
               {formatCurrency(availableInvestmentPool)}
             </p>
             <p className="inv-summary-sub">
-              {profile ? `₱${parseFloat(profile.investments_total).toLocaleString("en-PH", { minimumFractionDigits: 2 })} transferred` : "—"}
+              {profile
+                ? `₱${parseFloat(profile.investments_total).toLocaleString("en-PH", { minimumFractionDigits: 2 })} transferred`
+                : "—"}
             </p>
           </div>
         </div>
@@ -212,23 +248,32 @@ export default function InvestmentsPage() {
           ) : (
             <div className="inv-list">
               {investments.map((investment) => {
-                const invested = parseFloat(investment.total_invested);
-                const current = parseFloat(investment.current_value);
-                const pl = parseFloat(investment.profit_loss);
-                const plPercent = invested > 0 ? (pl / invested) * 100 : 0;
-                const typeColor = getTypeColor(investment.type);
-                const isEditing = editingId === investment.id;
+                const invested = parseFloat(investment.total_invested)
+                const current = parseFloat(investment.current_value)
+                const pl = parseFloat(investment.profit_loss)
+                const plPercent = invested > 0 ? (pl / invested) * 100 : 0
+                const typeColor = getTypeColor(investment.type)
+                const isEditing = editingId === investment.id
 
                 return (
                   <div key={investment.id} className="inv-item">
                     <div className="inv-item-left">
-                      <div className="inv-item-icon" style={{ background: typeColor.bg }}>
-                        <InvestmentIcon type={investment.type} color={typeColor.text} />
+                      <div
+                        className="inv-item-icon"
+                        style={{ background: typeColor.bg }}
+                      >
+                        <InvestmentIcon
+                          type={investment.type}
+                          color={typeColor.text}
+                        />
                       </div>
                       <div>
                         <p className="inv-item-name">{investment.name}</p>
                         <div className="inv-item-meta">
-                          <span className="inv-item-type" style={{ color: typeColor.text }}>
+                          <span
+                            className="inv-item-type"
+                            style={{ color: typeColor.text }}
+                          >
                             {getTypeLabel(investment.type)}
                           </span>
                           <span className="inv-item-quantity">
@@ -253,18 +298,27 @@ export default function InvestmentsPage() {
                           >
                             Save
                           </button>
-                          <button className="inv-edit-btn inv-cancel-btn" onClick={handleCancelEdit}>
+                          <button
+                            className="inv-edit-btn inv-cancel-btn"
+                            onClick={handleCancelEdit}
+                          >
                             Cancel
                           </button>
                         </div>
                       ) : (
                         <>
-                          <p className="inv-item-value">{formatCurrency(current)}</p>
+                          <p className="inv-item-value">
+                            {formatCurrency(current)}
+                          </p>
                           <p
                             className="inv-item-pl"
-                            style={{ color: pl >= 0 ? "var(--success)" : "var(--error)" }}
+                            style={{
+                              color:
+                                pl >= 0 ? "var(--success)" : "var(--error)",
+                            }}
                           >
-                            {pl >= 0 ? "+" : ""}{formatCurrency(pl)} ({pl >= 0 ? "+" : ""}
+                            {pl >= 0 ? "+" : ""}
+                            {formatCurrency(pl)} ({pl >= 0 ? "+" : ""}
                             {plPercent.toFixed(2)}%)
                           </p>
                           <button
@@ -277,7 +331,7 @@ export default function InvestmentsPage() {
                       )}
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           )}
@@ -296,7 +350,7 @@ export default function InvestmentsPage() {
         />
       </div>
     </>
-  );
+  )
 }
 
 function InvestmentIcon({ type, color }: { type: string; color: string }) {
@@ -309,7 +363,7 @@ function InvestmentIcon({ type, color }: { type: string; color: string }) {
     strokeWidth: "2",
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
-  };
+  }
 
   if (type === "stocks") {
     return (
@@ -317,7 +371,7 @@ function InvestmentIcon({ type, color }: { type: string; color: string }) {
         <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
         <polyline points="16 7 22 7 22 13" />
       </svg>
-    );
+    )
   }
   if (type === "crypto") {
     return (
@@ -326,7 +380,7 @@ function InvestmentIcon({ type, color }: { type: string; color: string }) {
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
         <line x1="12" y1="17" x2="12.01" y2="17" />
       </svg>
-    );
+    )
   }
   if (type === "real_estate") {
     return (
@@ -334,7 +388,7 @@ function InvestmentIcon({ type, color }: { type: string; color: string }) {
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
-    );
+    )
   }
   if (type === "bonds") {
     return (
@@ -342,7 +396,7 @@ function InvestmentIcon({ type, color }: { type: string; color: string }) {
         <rect x="2" y="7" width="20" height="14" rx="2" />
         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
       </svg>
-    );
+    )
   }
   return (
     <svg {...props}>
@@ -350,7 +404,7 @@ function InvestmentIcon({ type, color }: { type: string; color: string }) {
       <line x1="12" y1="8" x2="12" y2="12" />
       <line x1="12" y1="16" x2="12.01" y2="16" />
     </svg>
-  );
+  )
 }
 
 const INVESTMENTS_STYLES = `
@@ -714,4 +768,4 @@ const INVESTMENTS_STYLES = `
       font-size: 32px;
     }
   }
-`;
+`

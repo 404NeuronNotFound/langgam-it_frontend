@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useCycleStore } from "../../store/cycleStore";
-import { useFinanceStore } from "../../store/financeStore";
+import { useState, useEffect } from "react"
+import { useCycleStore } from "../../store/cycleStore"
+import { useFinanceStore } from "../../store/financeStore"
 
 // ------------------------------------------------------------------
 // Langgam-It — Income Page
@@ -10,101 +10,107 @@ import { useFinanceStore } from "../../store/financeStore";
 // ------------------------------------------------------------------
 
 export default function IncomePage() {
-  const { currentCycle, addIncome, fetchCurrentCycle, lastAllocationResult } = useCycleStore();
-  const { profile } = useFinanceStore();
-  
-  const [incomeInput, setIncomeInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [showResult, setShowResult] = useState(false);
+  const { currentCycle, addIncome, fetchCurrentCycle, lastAllocationResult } =
+    useCycleStore()
+  const { profile } = useFinanceStore()
+
+  const [incomeInput, setIncomeInput] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [showResult, setShowResult] = useState(false)
 
   useEffect(() => {
-    fetchCurrentCycle();
-  }, [fetchCurrentCycle]);
+    fetchCurrentCycle()
+  }, [fetchCurrentCycle])
 
-  const currency = profile?.currency || "PHP";
+  const currency = profile?.currency || "PHP"
 
   function formatCurrency(val: number | string) {
-    const num = typeof val === "string" ? parseFloat(val) : val;
+    const num = typeof val === "string" ? parseFloat(val) : val
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency,
       minimumFractionDigits: 2,
-    }).format(num);
+    }).format(num)
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value;
+    const value = e.target.value
     // Allow empty string, 0, and valid decimal numbers
-    if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
-    setIncomeInput(value);
-    setError("");
+    if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return
+    setIncomeInput(value)
+    setError("")
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    
-    const amount = parseFloat(incomeInput) || 0; // Allow 0 for survival mode
+    e.preventDefault()
+
+    const amount = parseFloat(incomeInput) || 0 // Allow 0 for survival mode
     if (amount < 0) {
-      setError("Amount cannot be negative.");
-      return;
+      setError("Amount cannot be negative.")
+      return
     }
 
-    setIsLoading(true);
-    setError("");
-    
+    setIsLoading(true)
+    setError("")
+
     try {
-      console.log("Submitting income:", { amount });
-      const result = await addIncome(amount);
-      console.log("Income submission result:", result);
-      
+      console.log("Submitting income:", { amount })
+      const result = await addIncome(amount)
+      console.log("Income submission result:", result)
+
       // Check if result has the expected structure
       if (!result || !result.cycle) {
-        console.error("Unexpected response structure:", result);
-        setError("Received unexpected response from server. Check console for details.");
-        return;
+        console.error("Unexpected response structure:", result)
+        setError(
+          "Received unexpected response from server. Check console for details."
+        )
+        return
       }
-      
-      setShowResult(true);
-      setIncomeInput("");
+
+      setShowResult(true)
+      setIncomeInput("")
     } catch (err: any) {
-      console.error("Income submission error:", err);
-      console.error("Error response:", err.response);
-      console.error("Error data:", err.response?.data);
-      console.error("Error status:", err.response?.status);
-      
-      let errorMessage = "Failed to submit income. ";
-      
+      console.error("Income submission error:", err)
+      console.error("Error response:", err.response)
+      console.error("Error data:", err.response?.data)
+      console.error("Error status:", err.response?.status)
+
+      let errorMessage = "Failed to submit income. "
+
       if (err.response?.status === 404) {
-        errorMessage += "Endpoint not found. Check if /api/income/ exists.";
+        errorMessage += "Endpoint not found. Check if /api/income/ exists."
       } else if (err.response?.status === 400) {
-        errorMessage += err.response?.data?.detail || err.response?.data?.message || "Invalid request data.";
+        errorMessage +=
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Invalid request data."
       } else if (err.response?.status === 500) {
-        errorMessage += "Server error. Check backend logs.";
+        errorMessage += "Server error. Check backend logs."
       } else if (err.response?.data?.detail) {
-        errorMessage += err.response.data.detail;
+        errorMessage += err.response.data.detail
       } else if (err.response?.data?.message) {
-        errorMessage += err.response.data.message;
+        errorMessage += err.response.data.message
       } else if (err.message) {
-        errorMessage += err.message;
+        errorMessage += err.message
       } else {
-        errorMessage += "Unknown error occurred.";
+        errorMessage += "Unknown error occurred."
       }
-      
-      setError(errorMessage);
+
+      setError(errorMessage)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
   function handleNewIncome() {
-    setShowResult(false);
+    setShowResult(false)
   }
 
   // Show allocation result
   if (showResult && lastAllocationResult && lastAllocationResult.logs) {
-    const { cycle, logs, survival_mode } = lastAllocationResult;
-    
+    const { cycle, logs, survival_mode } = lastAllocationResult
+
     return (
       <>
         <style>{INCOME_STYLES}</style>
@@ -122,7 +128,8 @@ export default function IncomePage() {
               <div>
                 <p className="income-survival-title">Survival Mode Activated</p>
                 <p className="income-survival-text">
-                  No income detected. Emergency fund is being used for essential expenses.
+                  No income detected. Emergency fund is being used for essential
+                  expenses.
                 </p>
               </div>
             </div>
@@ -132,7 +139,9 @@ export default function IncomePage() {
             <div className="income-result-header">
               <div>
                 <p className="income-result-label">Total Income</p>
-                <p className="income-result-value">{formatCurrency(cycle.income)}</p>
+                <p className="income-result-value">
+                  {formatCurrency(cycle.income)}
+                </p>
               </div>
               <div className="income-result-status">
                 <span className="income-status-badge">{cycle.status}</span>
@@ -141,16 +150,24 @@ export default function IncomePage() {
 
             <div className="income-result-grid">
               <div className="income-result-item">
-                <span className="income-result-item-label">Expenses Budget</span>
-                <span className="income-result-item-value">{formatCurrency(cycle.expenses_budget)}</span>
+                <span className="income-result-item-label">
+                  Expenses Budget
+                </span>
+                <span className="income-result-item-value">
+                  {formatCurrency(cycle.expenses_budget)}
+                </span>
               </div>
               <div className="income-result-item">
                 <span className="income-result-item-label">Wants Budget</span>
-                <span className="income-result-item-value">{formatCurrency(cycle.wants_budget)}</span>
+                <span className="income-result-item-value">
+                  {formatCurrency(cycle.wants_budget)}
+                </span>
               </div>
               <div className="income-result-item">
                 <span className="income-result-item-label">Remaining</span>
-                <span className="income-result-item-value">{formatCurrency(cycle.remaining_budget)}</span>
+                <span className="income-result-item-value">
+                  {formatCurrency(cycle.remaining_budget)}
+                </span>
               </div>
             </div>
           </div>
@@ -165,7 +182,9 @@ export default function IncomePage() {
                       <div className="income-log-arrow">→</div>
                       <div>
                         <p className="income-log-route">
-                          <span className="income-log-from">{log.from_bucket}</span>
+                          <span className="income-log-from">
+                            {log.from_bucket}
+                          </span>
                           {" → "}
                           <span className="income-log-to">{log.to_bucket}</span>
                         </p>
@@ -174,7 +193,9 @@ export default function IncomePage() {
                         </p>
                       </div>
                     </div>
-                    <span className="income-log-amount">{formatCurrency(log.amount)}</span>
+                    <span className="income-log-amount">
+                      {formatCurrency(log.amount)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -186,7 +207,7 @@ export default function IncomePage() {
           </button>
         </div>
       </>
-    );
+    )
   }
 
   // Show income input form
@@ -197,7 +218,8 @@ export default function IncomePage() {
         <div className="income-header">
           <h1 className="income-title">Add Income</h1>
           <p className="income-subtitle">
-            Enter your income amount. The allocation engine will automatically distribute it across your financial buckets.
+            Enter your income amount. The allocation engine will automatically
+            distribute it across your financial buckets.
           </p>
         </div>
 
@@ -208,23 +230,32 @@ export default function IncomePage() {
               <span className="income-status-badge">{currentCycle.status}</span>
             </div>
             <p className="income-current-month">
-              {new Date(currentCycle.month + "-01").toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
+              {new Date(currentCycle.month + "-01").toLocaleDateString(
+                "en-US",
+                {
+                  month: "long",
+                  year: "numeric",
+                }
+              )}
             </p>
             <div className="income-current-grid">
               <div>
                 <p className="income-current-item-label">Total Income</p>
-                <p className="income-current-item-value">{formatCurrency(currentCycle.income)}</p>
+                <p className="income-current-item-value">
+                  {formatCurrency(currentCycle.income)}
+                </p>
               </div>
               <div>
                 <p className="income-current-item-label">Expenses Budget</p>
-                <p className="income-current-item-value">{formatCurrency(currentCycle.expenses_budget)}</p>
+                <p className="income-current-item-value">
+                  {formatCurrency(currentCycle.expenses_budget)}
+                </p>
               </div>
               <div>
                 <p className="income-current-item-label">Wants Budget</p>
-                <p className="income-current-item-value">{formatCurrency(currentCycle.wants_budget)}</p>
+                <p className="income-current-item-value">
+                  {formatCurrency(currentCycle.wants_budget)}
+                </p>
               </div>
             </div>
           </div>
@@ -234,7 +265,8 @@ export default function IncomePage() {
             <div>
               <p className="income-info-title">No Active Cycle</p>
               <p className="income-info-text">
-                Submit your first income to create a new monthly cycle and start tracking your budget.
+                Submit your first income to create a new monthly cycle and start
+                tracking your budget.
               </p>
             </div>
           </div>
@@ -246,13 +278,14 @@ export default function IncomePage() {
               Income Amount
             </label>
             <p className="income-field-desc">
-              Enter the amount you received. This will trigger the allocation engine.
+              Enter the amount you received. This will trigger the allocation
+              engine.
             </p>
             <div className="income-input-wrap">
               <span className="income-currency">₱</span>
               <input
                 id="income-amount"
-                className={`income-input${error ? " income-input-error" : ""}`}
+                className={`income-input${error ? "income-input-error" : ""}`}
                 type="text"
                 inputMode="decimal"
                 placeholder="0.00 (enter 0 for survival mode)"
@@ -265,8 +298,15 @@ export default function IncomePage() {
             {error && <span className="income-error-msg">{error}</span>}
             {error && (
               <div className="income-error-details">
-                <p style={{ fontSize: "11px", color: "var(--text-3)", marginTop: "4px" }}>
-                  Check browser console for details. Make sure the backend endpoint <code>/api/income/</code> is implemented.
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-3)",
+                    marginTop: "4px",
+                  }}
+                >
+                  Check browser console for details. Make sure the backend
+                  endpoint <code>/api/income/</code> is implemented.
                 </p>
               </div>
             )}
@@ -281,12 +321,14 @@ export default function IncomePage() {
           </button>
 
           <p className="income-hint">
-            The allocation engine will fill your emergency fund, rigs fund, savings, and set your spendable budgets automatically. Enter 0 to activate survival mode.
+            The allocation engine will fill your emergency fund, rigs fund,
+            savings, and set your spendable budgets automatically. Enter 0 to
+            activate survival mode.
           </p>
         </form>
       </div>
     </>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -725,4 +767,4 @@ const INCOME_STYLES = `
       max-width: 1100px;
     }
   }
-`;
+`

@@ -1,66 +1,78 @@
 // API functions for monthly cycle and allocation
 
-import { apiClient } from "./client";
+import { apiClient } from "./client"
 import type {
   MonthCycle,
   AllocationLog,
   IncomeSubmission,
   InvestmentSubmission,
   AllocationResult,
-} from "@/types/cycle";
+} from "@/types/cycle"
 
 // Get current active cycle
 export async function getCurrentCycle(): Promise<MonthCycle | null> {
   try {
-    const response = await apiClient.get("/cycle/current/");
-    return response.data;
+    const response = await apiClient.get("/cycle/current/")
+    return response.data
   } catch (error: any) {
     if (error.response?.status === 404) {
-      return null;
+      return null
     }
-    throw error;
+    throw error
   }
 }
 
 // Get allocation logs for a cycle
-export async function getAllocationLogs(cycleId: number): Promise<AllocationLog[]> {
-  const response = await apiClient.get(`/cycle/${cycleId}/logs/`);
-  return response.data;
+export async function getAllocationLogs(
+  cycleId: number
+): Promise<AllocationLog[]> {
+  const response = await apiClient.get(`/cycle/${cycleId}/logs/`)
+  return response.data
 }
 
 // Submit income and trigger allocation engine
-export async function submitIncome(data: IncomeSubmission): Promise<AllocationResult> {
-  console.log("API: Submitting income to /income/", data);
-  const response = await apiClient.post("/income/", data);
-  console.log("API: Income response", response.data);
-  return response.data;
+export async function submitIncome(
+  data: IncomeSubmission
+): Promise<AllocationResult> {
+  console.log("API: Submitting income to /income/", data)
+  const response = await apiClient.post("/income/", data)
+  console.log("API: Income response", response.data)
+  return response.data
 }
 
 // Move savings to investments
-export async function submitInvestment(data: InvestmentSubmission): Promise<AllocationResult> {
-  const response = await apiClient.post("/invest/", data);
-  return response.data;
+export async function submitInvestment(
+  data: InvestmentSubmission
+): Promise<AllocationResult> {
+  const response = await apiClient.post("/invest/", data)
+  return response.data
 }
 
 // Transfer between savings and investments
-export async function transferFunds(data: { amount: number; from: "savings" | "investments"; to: "savings" | "investments" }): Promise<any> {
+export async function transferFunds(data: {
+  amount: number
+  from: "savings" | "investments"
+  to: "savings" | "investments"
+}): Promise<any> {
   // This endpoint might need to be created in backend
   // For now, we'll use the invest endpoint for savings -> investments
   if (data.from === "savings" && data.to === "investments") {
-    return submitInvestment({ amount: data.amount });
+    return submitInvestment({ amount: data.amount })
   }
   // Add endpoint for investments -> savings transfer when backend is ready
-  throw new Error("Transfer from investments to savings not yet implemented in backend");
+  throw new Error(
+    "Transfer from investments to savings not yet implemented in backend"
+  )
 }
 
 // Get all cycles (for history)
 export async function getAllCycles(): Promise<MonthCycle[]> {
-  const response = await apiClient.get("/cycle/");
-  return response.data;
+  const response = await apiClient.get("/cycle/")
+  return response.data
 }
 
 // Reset expenses for current cycle
 export async function resetCycleExpenses(): Promise<any> {
-  const response = await apiClient.post("/cycle/reset-expenses/");
-  return response.data;
+  const response = await apiClient.post("/cycle/reset-expenses/")
+  return response.data
 }

@@ -1,30 +1,30 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useAuthStore } from "../store/authStore";
-import type { UpdateProfilePayload, ChangePasswordPayload } from "../types/auth";
+import { useEffect, useState } from "react"
+import { useAuthStore } from "../store/authStore"
+import type { UpdateProfilePayload, ChangePasswordPayload } from "../types/auth"
 
 export default function SettingsPage() {
-  const { user, isLoading, updateProfile, changePassword } = useAuthStore();
+  const { user, isLoading, updateProfile, changePassword } = useAuthStore()
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
     first_name: "",
     last_name: "",
     email: "",
-  });
-  const [profileSuccess, setProfileSuccess] = useState(false);
-  const [profileError, setProfileError] = useState("");
+  })
+  const [profileSuccess, setProfileSuccess] = useState(false)
+  const [profileError, setProfileError] = useState("")
 
   // Password form state
   const [passwordForm, setPasswordForm] = useState({
     old_password: "",
     new_password: "",
     confirm_password: "",
-  });
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
-  const [showPasswords, setShowPasswords] = useState(false);
+  })
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [passwordError, setPasswordError] = useState("")
+  const [showPasswords, setShowPasswords] = useState(false)
 
   // Initialize form with user data
   useEffect(() => {
@@ -33,76 +33,76 @@ export default function SettingsPage() {
         first_name: user.first_name || "",
         last_name: user.last_name || "",
         email: user.email || "",
-      });
+      })
     }
-  }, [user]);
+  }, [user])
 
   // Clear success messages after 3 seconds
   useEffect(() => {
     if (profileSuccess) {
-      const timer = setTimeout(() => setProfileSuccess(false), 3000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setProfileSuccess(false), 3000)
+      return () => clearTimeout(timer)
     }
-  }, [profileSuccess]);
+  }, [profileSuccess])
 
   useEffect(() => {
     if (passwordSuccess) {
-      const timer = setTimeout(() => setPasswordSuccess(false), 3000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setPasswordSuccess(false), 3000)
+      return () => clearTimeout(timer)
     }
-  }, [passwordSuccess]);
+  }, [passwordSuccess])
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setProfileForm((prev) => ({ ...prev, [name]: value }));
-    setProfileError("");
-  };
+    const { name, value } = e.target
+    setProfileForm((prev) => ({ ...prev, [name]: value }))
+    setProfileError("")
+  }
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPasswordForm((prev) => ({ ...prev, [name]: value }));
-    setPasswordError("");
-  };
+    const { name, value } = e.target
+    setPasswordForm((prev) => ({ ...prev, [name]: value }))
+    setPasswordError("")
+  }
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfileError("");
-    setProfileSuccess(false);
+    e.preventDefault()
+    setProfileError("")
+    setProfileSuccess(false)
 
     try {
       const payload: UpdateProfilePayload = {
         first_name: profileForm.first_name,
         last_name: profileForm.last_name,
         email: profileForm.email,
-      };
-      await updateProfile(payload);
-      setProfileSuccess(true);
+      }
+      await updateProfile(payload)
+      setProfileSuccess(true)
     } catch (err: any) {
-      setProfileError(err.message || "Failed to update profile");
+      setProfileError(err.message || "Failed to update profile")
     }
-  };
+  }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError("");
-    setPasswordSuccess(false);
+    e.preventDefault()
+    setPasswordError("")
+    setPasswordSuccess(false)
 
     // Validation
     if (!passwordForm.old_password) {
-      setPasswordError("Current password is required");
-      return;
+      setPasswordError("Current password is required")
+      return
     }
     if (!passwordForm.new_password) {
-      setPasswordError("New password is required");
-      return;
+      setPasswordError("New password is required")
+      return
     }
     if (passwordForm.new_password.length < 8) {
-      setPasswordError("New password must be at least 8 characters");
-      return;
+      setPasswordError("New password must be at least 8 characters")
+      return
     }
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setPasswordError("New passwords do not match");
-      return;
+      setPasswordError("New passwords do not match")
+      return
     }
 
     try {
@@ -110,14 +110,18 @@ export default function SettingsPage() {
         old_password: passwordForm.old_password,
         new_password: passwordForm.new_password,
         confirm_password: passwordForm.confirm_password,
-      };
-      await changePassword(payload);
-      setPasswordSuccess(true);
-      setPasswordForm({ old_password: "", new_password: "", confirm_password: "" });
+      }
+      await changePassword(payload)
+      setPasswordSuccess(true)
+      setPasswordForm({
+        old_password: "",
+        new_password: "",
+        confirm_password: "",
+      })
     } catch (err: any) {
-      setPasswordError(err.message || "Failed to change password");
+      setPasswordError(err.message || "Failed to change password")
     }
-  };
+  }
 
   if (!user) {
     return (
@@ -130,7 +134,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -199,9 +203,15 @@ export default function SettingsPage() {
             </div>
 
             {profileError && <div className="set-error">{profileError}</div>}
-            {profileSuccess && <div className="set-success">Profile updated successfully</div>}
+            {profileSuccess && (
+              <div className="set-success">Profile updated successfully</div>
+            )}
 
-            <button type="submit" className="set-btn set-btn-primary" disabled={isLoading}>
+            <button
+              type="submit"
+              className="set-btn set-btn-primary"
+              disabled={isLoading}
+            >
               {isLoading ? "Saving..." : "Save Changes"}
             </button>
           </form>
@@ -211,7 +221,9 @@ export default function SettingsPage() {
         <div className="set-section">
           <div className="set-section-header">
             <h2 className="set-section-title">Change Password</h2>
-            <p className="set-section-desc">Update your password to keep your account secure</p>
+            <p className="set-section-desc">
+              Update your password to keep your account secure
+            </p>
           </div>
 
           <form onSubmit={handlePasswordSubmit} className="set-form">
@@ -271,9 +283,15 @@ export default function SettingsPage() {
             </div>
 
             {passwordError && <div className="set-error">{passwordError}</div>}
-            {passwordSuccess && <div className="set-success">Password changed successfully</div>}
+            {passwordSuccess && (
+              <div className="set-success">Password changed successfully</div>
+            )}
 
-            <button type="submit" className="set-btn set-btn-primary" disabled={isLoading}>
+            <button
+              type="submit"
+              className="set-btn set-btn-primary"
+              disabled={isLoading}
+            >
               {isLoading ? "Updating..." : "Change Password"}
             </button>
           </form>
@@ -294,14 +312,16 @@ export default function SettingsPage() {
             <div className="set-info-item">
               <p className="set-info-label">Member Since</p>
               <p className="set-info-value">
-                {user.date_joined ? new Date(user.date_joined).toLocaleDateString() : "N/A"}
+                {user.date_joined
+                  ? new Date(user.date_joined).toLocaleDateString()
+                  : "N/A"}
               </p>
             </div>
           </div>
         </div>
       </div>
     </>
-  );
+  )
 }
 
 const SETTINGS_STYLES = `
@@ -550,4 +570,4 @@ const SETTINGS_STYLES = `
       grid-template-columns: 1fr;
     }
   }
-`;
+`

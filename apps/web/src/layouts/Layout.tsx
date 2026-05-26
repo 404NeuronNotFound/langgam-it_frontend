@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { Outlet } from "react-router-dom";
-import Sidebar from "../components/SideBar";
+import { Outlet } from "react-router-dom"
+import Sidebar from "../components/SideBar"
 
 // ------------------------------------------------------------------
 // Langgam-It — Layout
@@ -21,7 +21,7 @@ export default function Layout() {
         </main>
       </div>
     </>
-  );
+  )
 }
 
 const LAYOUT_STYLES = `
@@ -60,4 +60,4 @@ const LAYOUT_STYLES = `
       padding-bottom: calc(56px + 1rem);
     }
   }
-`;
+`

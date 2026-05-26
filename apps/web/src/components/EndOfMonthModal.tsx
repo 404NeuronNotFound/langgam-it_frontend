@@ -1,62 +1,70 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useReportStore } from "../store/reportStore";
-import { useCycleStore } from "../store/cycleStore";
-import { useExpenseStore } from "../store/expenseStore";
+import { useState } from "react"
+import { useReportStore } from "../store/reportStore"
+import { useCycleStore } from "../store/cycleStore"
+import { useExpenseStore } from "../store/expenseStore"
 
 interface EndOfMonthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
-export default function EndOfMonthModal({ isOpen, onClose }: EndOfMonthModalProps) {
-  const [isConfirming, setIsConfirming] = useState(false);
-  const { closeCurrentMonth } = useReportStore();
-  const { currentCycle, fetchCurrentCycle } = useCycleStore();
-  const { expenses } = useExpenseStore();
+export default function EndOfMonthModal({
+  isOpen,
+  onClose,
+}: EndOfMonthModalProps) {
+  const [isConfirming, setIsConfirming] = useState(false)
+  const { closeCurrentMonth } = useReportStore()
+  const { currentCycle, fetchCurrentCycle } = useCycleStore()
+  const { expenses } = useExpenseStore()
 
-  if (!isOpen || !currentCycle) return null;
+  if (!isOpen || !currentCycle) return null
 
   function formatCurrency(val: number | string) {
-    const num = typeof val === "string" ? parseFloat(val) : val;
+    const num = typeof val === "string" ? parseFloat(val) : val
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
       minimumFractionDigits: 2,
-    }).format(num);
+    }).format(num)
   }
 
   async function handleConfirm() {
-    setIsConfirming(true);
+    setIsConfirming(true)
     try {
-      await closeCurrentMonth();
-      await fetchCurrentCycle();
-      onClose();
+      await closeCurrentMonth()
+      await fetchCurrentCycle()
+      onClose()
     } catch (error) {
-      console.error("Failed to close month:", error);
+      console.error("Failed to close month:", error)
     } finally {
-      setIsConfirming(false);
+      setIsConfirming(false)
     }
   }
 
-  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString(
+    "en-US",
+    {
+      month: "long",
+      year: "numeric",
+    }
+  )
 
   // Calculate spent amounts from expenses
-  const currentCycleExpenses = expenses.filter((e) => e.cycle === currentCycle.id);
+  const currentCycleExpenses = expenses.filter(
+    (e) => e.cycle === currentCycle.id
+  )
   const needsSpent = currentCycleExpenses
     .filter((e) => e.category === "needs")
-    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    .reduce((sum, e) => sum + parseFloat(e.amount), 0)
   const wantsSpent = currentCycleExpenses
     .filter((e) => e.category === "wants")
-    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    .reduce((sum, e) => sum + parseFloat(e.amount), 0)
 
-  const needsRemaining = parseFloat(currentCycle.expenses_budget) - needsSpent;
-  const wantsRemaining = parseFloat(currentCycle.wants_budget) - wantsSpent;
-  const unspentTotal = needsRemaining + wantsRemaining;
+  const needsRemaining = parseFloat(currentCycle.expenses_budget) - needsSpent
+  const wantsRemaining = parseFloat(currentCycle.wants_budget) - wantsSpent
+  const unspentTotal = needsRemaining + wantsRemaining
 
   return (
     <>
@@ -79,7 +87,9 @@ export default function EndOfMonthModal({ isOpen, onClose }: EndOfMonthModalProp
               <p className="eom-section-label">Income</p>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Total Income</span>
-                <span className="eom-stat-value">{formatCurrency(currentCycle.income)}</span>
+                <span className="eom-stat-value">
+                  {formatCurrency(currentCycle.income)}
+                </span>
               </div>
             </div>
 
@@ -88,30 +98,42 @@ export default function EndOfMonthModal({ isOpen, onClose }: EndOfMonthModalProp
               <p className="eom-section-label">Spending</p>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Allocated)</span>
-                <span className="eom-stat-value">{formatCurrency(currentCycle.expenses_budget)}</span>
+                <span className="eom-stat-value">
+                  {formatCurrency(currentCycle.expenses_budget)}
+                </span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Spent)</span>
-                <span className="eom-stat-value eom-spent">{formatCurrency(needsSpent)}</span>
+                <span className="eom-stat-value eom-spent">
+                  {formatCurrency(needsSpent)}
+                </span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Remaining)</span>
-                <span className="eom-stat-value eom-remaining">{formatCurrency(needsRemaining)}</span>
+                <span className="eom-stat-value eom-remaining">
+                  {formatCurrency(needsRemaining)}
+                </span>
               </div>
 
               <div className="eom-divider" />
 
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Allocated)</span>
-                <span className="eom-stat-value">{formatCurrency(currentCycle.wants_budget)}</span>
+                <span className="eom-stat-value">
+                  {formatCurrency(currentCycle.wants_budget)}
+                </span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Spent)</span>
-                <span className="eom-stat-value eom-spent">{formatCurrency(wantsSpent)}</span>
+                <span className="eom-stat-value eom-spent">
+                  {formatCurrency(wantsSpent)}
+                </span>
               </div>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Remaining)</span>
-                <span className="eom-stat-value eom-remaining">{formatCurrency(wantsRemaining)}</span>
+                <span className="eom-stat-value eom-remaining">
+                  {formatCurrency(wantsRemaining)}
+                </span>
               </div>
             </div>
 
@@ -120,10 +142,13 @@ export default function EndOfMonthModal({ isOpen, onClose }: EndOfMonthModalProp
               <p className="eom-section-label">Unspent Budget Rollover</p>
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Total Unspent</span>
-                <span className="eom-stat-value eom-success">{formatCurrency(unspentTotal)}</span>
+                <span className="eom-stat-value eom-success">
+                  {formatCurrency(unspentTotal)}
+                </span>
               </div>
               <p className="eom-info-text">
-                This amount will be added to your Cash on Hand for discretionary use.
+                This amount will be added to your Cash on Hand for discretionary
+                use.
               </p>
             </div>
 
@@ -146,24 +171,33 @@ export default function EndOfMonthModal({ isOpen, onClose }: EndOfMonthModalProp
               <div>
                 <p className="eom-warning-title">Confirm Cycle Closure</p>
                 <p className="eom-warning-text">
-                  This will close the current cycle and start a new month. This action cannot be undone.
+                  This will close the current cycle and start a new month. This
+                  action cannot be undone.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="eom-footer">
-            <button className="eom-btn-secondary" onClick={onClose} disabled={isConfirming}>
+            <button
+              className="eom-btn-secondary"
+              onClick={onClose}
+              disabled={isConfirming}
+            >
               Cancel
             </button>
-            <button className="eom-btn-primary" onClick={handleConfirm} disabled={isConfirming}>
+            <button
+              className="eom-btn-primary"
+              onClick={handleConfirm}
+              disabled={isConfirming}
+            >
               {isConfirming ? "Closing Cycle..." : "Confirm & Close Cycle"}
             </button>
           </div>
         </div>
       </div>
     </>
-  );
+  )
 }
 
 const MODAL_STYLES = `
@@ -402,4 +436,4 @@ const MODAL_STYLES = `
       padding-right: 1.25rem;
     }
   }
-`;
+`

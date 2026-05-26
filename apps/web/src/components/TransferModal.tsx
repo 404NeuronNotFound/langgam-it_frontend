@@ -1,105 +1,120 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useInvestmentStore } from "../store/investmentStore";
-import { useInvestmentAllocationStore } from "../store/investmentAllocationStore";
-import { useFinanceStore } from "../store/financeStore";
+import { useState } from "react"
+import { useInvestmentStore } from "../store/investmentStore"
+import { useInvestmentAllocationStore } from "../store/investmentAllocationStore"
+import { useFinanceStore } from "../store/financeStore"
 
 interface TransferModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
 export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
-  const { profile } = useFinanceStore();
-  const { transferToInvestments, transferToSavings, isLoading } = useInvestmentStore();
-  const { updateAllocation } = useInvestmentAllocationStore();
+  const { profile } = useFinanceStore()
+  const { transferToInvestments, transferToSavings, isLoading } =
+    useInvestmentStore()
+  const { updateAllocation } = useInvestmentAllocationStore()
 
-  const [amount, setAmount]       = useState("");
-  const [direction, setDirection] = useState<"to_investments" | "to_savings">("to_investments");
-  const [error, setError]         = useState("");
+  const [amount, setAmount] = useState("")
+  const [direction, setDirection] = useState<"to_investments" | "to_savings">(
+    "to_investments"
+  )
+  const [error, setError] = useState("")
 
-  if (!isOpen || !profile) return null;
+  if (!isOpen || !profile) return null
 
-  const savings     = parseFloat(profile.savings);
-  const investments = parseFloat(profile.investments_total);
+  const savings = parseFloat(profile.savings)
+  const investments = parseFloat(profile.investments_total)
 
   function formatCurrency(val: number) {
     return new Intl.NumberFormat("en-PH", {
-      style: "currency", currency: "PHP", minimumFractionDigits: 2,
-    }).format(val);
+      style: "currency",
+      currency: "PHP",
+      minimumFractionDigits: 2,
+    }).format(val)
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+    e.preventDefault()
+    setError("")
 
-    const transferAmount = parseFloat(amount);
+    const transferAmount = parseFloat(amount)
     if (!transferAmount || transferAmount <= 0) {
-      setError("Please enter a valid amount.");
-      return;
+      setError("Please enter a valid amount.")
+      return
     }
 
     if (direction === "to_investments" && transferAmount > savings) {
-      setError(`Insufficient savings. Available: ${formatCurrency(savings)}`);
-      return;
+      setError(`Insufficient savings. Available: ${formatCurrency(savings)}`)
+      return
     }
 
     if (direction === "to_savings" && transferAmount > investments) {
-      setError(`Insufficient investments. Available: ${formatCurrency(investments)}`);
-      return;
+      setError(
+        `Insufficient investments. Available: ${formatCurrency(investments)}`
+      )
+      return
     }
 
     try {
       if (direction === "to_investments") {
-        await transferToInvestments(transferAmount);
+        await transferToInvestments(transferAmount)
         // Sync allocation when transferring to investments
-        await updateAllocation(transferAmount);
+        await updateAllocation(transferAmount)
       } else {
-        await transferToSavings(transferAmount);
+        await transferToSavings(transferAmount)
       }
       // Refresh profile to update available pool in frontend
-      await useFinanceStore.getState().fetchProfile();
-      setAmount("");
-      onClose();
+      await useFinanceStore.getState().fetchProfile()
+      setAmount("")
+      onClose()
     } catch (err: any) {
-      setError(err.message || "Transfer failed. Please try again.");
+      setError(err.message || "Transfer failed. Please try again.")
     }
   }
 
   function handleClose() {
     if (!isLoading) {
-      setAmount("");
-      setError("");
-      onClose();
+      setAmount("")
+      setError("")
+      onClose()
     }
   }
 
-  const available = direction === "to_investments" ? savings : investments;
+  const available = direction === "to_investments" ? savings : investments
 
   return (
     <>
       <style>{MODAL_STYLES}</style>
       <div className="tm-overlay" onClick={handleClose}>
         <div className="tm-modal" onClick={(e) => e.stopPropagation()}>
-
           <div className="tm-header">
             <h2 className="tm-title">Transfer Funds</h2>
-            <button className="tm-close-btn" onClick={handleClose} aria-label="Close">×</button>
+            <button
+              className="tm-close-btn"
+              onClick={handleClose}
+              aria-label="Close"
+            >
+              ×
+            </button>
           </div>
 
           <form className="tm-body" onSubmit={handleSubmit}>
-
             {/* Balance display */}
             <div className="tm-balances">
               <div className="tm-balance-item">
                 <span className="tm-balance-label">Savings</span>
-                <span className="tm-balance-value">{formatCurrency(savings)}</span>
+                <span className="tm-balance-value">
+                  {formatCurrency(savings)}
+                </span>
               </div>
               <div className="tm-balance-arrow">⇄</div>
               <div className="tm-balance-item" style={{ textAlign: "right" }}>
                 <span className="tm-balance-label">Investments</span>
-                <span className="tm-balance-value">{formatCurrency(investments)}</span>
+                <span className="tm-balance-value">
+                  {formatCurrency(investments)}
+                </span>
               </div>
             </div>
 
@@ -109,16 +124,22 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
               <div className="tm-direction-btns">
                 <button
                   type="button"
-                  className={`tm-direction-btn${direction === "to_investments" ? " active" : ""}`}
-                  onClick={() => { setDirection("to_investments"); setError(""); }}
+                  className={`tm-direction-btn${direction === "to_investments" ? "active" : ""}`}
+                  onClick={() => {
+                    setDirection("to_investments")
+                    setError("")
+                  }}
                   disabled={isLoading}
                 >
                   Savings → Investments
                 </button>
                 <button
                   type="button"
-                  className={`tm-direction-btn${direction === "to_savings" ? " active" : ""}`}
-                  onClick={() => { setDirection("to_savings"); setError(""); }}
+                  className={`tm-direction-btn${direction === "to_savings" ? "active" : ""}`}
+                  onClick={() => {
+                    setDirection("to_savings")
+                    setError("")
+                  }}
                   disabled={isLoading}
                 >
                   Investments → Savings
@@ -128,7 +149,9 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
 
             {/* Amount */}
             <div className="tm-field">
-              <label className="tm-label" htmlFor="tm-amount">Amount</label>
+              <label className="tm-label" htmlFor="tm-amount">
+                Amount
+              </label>
               <div className="tm-input-wrap">
                 <span className="tm-currency">₱</span>
                 <input
@@ -139,7 +162,10 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
                   className="tm-input"
                   placeholder="0.00"
                   value={amount}
-                  onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    setAmount(e.target.value)
+                    setError("")
+                  }}
                   disabled={isLoading}
                 />
               </div>
@@ -149,23 +175,33 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
             {error && <p className="tm-error">{error}</p>}
 
             <div className="tm-footer">
-              <button type="button" className="tm-btn-secondary"
-                onClick={handleClose} disabled={isLoading}>
+              <button
+                type="button"
+                className="tm-btn-secondary"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
                 Cancel
               </button>
-              <button type="submit" className="tm-btn-primary" disabled={isLoading}>
-                {isLoading
-                  ? <span className="tm-spinner" />
-                  : direction === "to_investments" ? "Move to Investments" : "Move to Savings"
-                }
+              <button
+                type="submit"
+                className="tm-btn-primary"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="tm-spinner" />
+                ) : direction === "to_investments" ? (
+                  "Move to Investments"
+                ) : (
+                  "Move to Savings"
+                )}
               </button>
             </div>
-
           </form>
         </div>
       </div>
     </>
-  );
+  )
 }
 
 const MODAL_STYLES = `
@@ -263,4 +299,4 @@ const MODAL_STYLES = `
     border-radius: 50%; animation: tm-spin 0.7s linear infinite;
   }
   @keyframes tm-spin { to { transform: rotate(360deg); } }
-`;
+`

@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { useAuthStore } from "../../store/authStore";
-import { useFinanceStore } from "../../store/financeStore";
-import NetWorthChart from "../../components/NetWorthChart";
+import { useEffect } from "react"
+import { useAuthStore } from "../../store/authStore"
+import { useFinanceStore } from "../../store/financeStore"
+import NetWorthChart from "../../components/NetWorthChart"
 
 // ------------------------------------------------------------------
 // Langgam-It — Dashboard
@@ -12,27 +12,27 @@ import NetWorthChart from "../../components/NetWorthChart";
 // ------------------------------------------------------------------
 
 export default function Dashboard() {
-  const user = useAuthStore((s) => s.user);
-  const { profile, snapshots, fetchProfile, fetchSnapshots } = useFinanceStore();
+  const user = useAuthStore((s) => s.user)
+  const { profile, snapshots, fetchProfile, fetchSnapshots } = useFinanceStore()
 
   useEffect(() => {
-    fetchProfile();
-    fetchSnapshots();
-  }, [fetchProfile, fetchSnapshots]);
+    fetchProfile()
+    fetchSnapshots()
+  }, [fetchProfile, fetchSnapshots])
 
-  const firstName = user?.first_name || user?.username || "there";
+  const firstName = user?.first_name || user?.username || "there"
 
   // Calculate net worth from latest snapshot
   // Backend returns newest first, so snapshots[0] is the most recent
-  const latestSnapshot = snapshots[0];
-  const netWorth = latestSnapshot ? parseFloat(latestSnapshot.net_worth) : 0;
-  
+  const latestSnapshot = snapshots[0]
+  const netWorth = latestSnapshot ? parseFloat(latestSnapshot.net_worth) : 0
+
   // Debug log
   console.log("Dashboard - Snapshots received:", {
     count: snapshots.length,
     first: snapshots[0],
     last: snapshots[snapshots.length - 1],
-  });
+  })
 
   // Get bucket data from profile
   const bucketData = {
@@ -41,58 +41,61 @@ export default function Dashboard() {
     investments_total: profile ? parseFloat(profile.investments_total) : 0,
     rigs_fund: profile ? parseFloat(profile.rigs_fund) : 0,
     cash_on_hand: profile ? parseFloat(profile.cash_on_hand) : 0,
-  };
+  }
 
   // Transform snapshots for chart - deduplicate by day, keep only latest per day
-  const historyByDay = new Map<string, { net_worth: number; timestamp: number; month: string }>();
-  
+  const historyByDay = new Map<
+    string,
+    { net_worth: number; timestamp: number; month: string }
+  >()
+
   snapshots
     .filter((s: any) => s.captured_at && s.net_worth)
-    .forEach((s: { captured_at: any; net_worth: string; }) => {
-      let dateStr = s.captured_at;
-      if (dateStr && !dateStr.includes('T')) {
-        dateStr = dateStr + 'T00:00:00';
+    .forEach((s: { captured_at: any; net_worth: string }) => {
+      let dateStr = s.captured_at
+      if (dateStr && !dateStr.includes("T")) {
+        dateStr = dateStr + "T00:00:00"
       }
-      
-      const date = new Date(dateStr);
-      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-      const month = !isNaN(date.getTime()) 
+
+      const date = new Date(dateStr)
+      const dayKey = date.toISOString().split("T")[0] // YYYY-MM-DD
+      const month = !isNaN(date.getTime())
         ? date.toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
           })
-        : "Unknown";
-      
-      const netWorth = parseFloat(s.net_worth);
-      const timestamp = date.getTime();
-      
+        : "Unknown"
+
+      const netWorth = parseFloat(s.net_worth)
+      const timestamp = date.getTime()
+
       // Keep only the latest snapshot for each day
-      const existing = historyByDay.get(dayKey);
+      const existing = historyByDay.get(dayKey)
       if (!existing || timestamp > existing.timestamp) {
-        historyByDay.set(dayKey, { net_worth: netWorth, timestamp, month });
+        historyByDay.set(dayKey, { net_worth: netWorth, timestamp, month })
       }
-    });
+    })
 
   // Convert map to array and sort by timestamp
   const history = Array.from(historyByDay.values())
     .sort((a, b) => a.timestamp - b.timestamp)
-    .map(({ timestamp, ...rest }) => rest);
+    .map(({ timestamp, ...rest }) => rest)
 
   // Debug: log the deduplicated data
   console.log("Deduplicated chart data:", {
     originalCount: snapshots.length,
     deduplicatedCount: history.length,
     data: history,
-  });
+  })
 
-  const currency = profile?.currency || "PHP";
+  const currency = profile?.currency || "PHP"
 
   function formatCurrency(val: number) {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency,
       minimumFractionDigits: 2,
-    }).format(val);
+    }).format(val)
   }
 
   const BUCKETS = [
@@ -136,26 +139,30 @@ export default function Dashboard() {
       iconColor: "var(--amber-icon)",
       icon: "box",
     },
-  ];
+  ]
 
-  const emergencyPct = Math.min((bucketData.emergency_fund / 10000) * 100, 100);
-  const rigsPct      = Math.min((bucketData.rigs_fund / 10000) * 100, 100);
+  const emergencyPct = Math.min((bucketData.emergency_fund / 10000) * 100, 100)
+  const rigsPct = Math.min((bucketData.rigs_fund / 10000) * 100, 100)
 
   return (
     <>
       <style>{DASH_STYLES}</style>
 
       <div className="db-root">
-
         {/* Greeting */}
         <div className="db-greeting">
           <div>
             <h1 className="db-greeting-title">Good morning, {firstName}.</h1>
-            <p className="db-greeting-sub">Here's your financial snapshot for today.</p>
+            <p className="db-greeting-sub">
+              Here's your financial snapshot for today.
+            </p>
           </div>
           <div className="db-date">
             {new Date().toLocaleDateString("en-PH", {
-              weekday: "long", month: "long", day: "numeric", year: "numeric",
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
             })}
           </div>
         </div>
@@ -166,7 +173,7 @@ export default function Dashboard() {
             <p className="db-networth-label">Total net worth</p>
             <p className="db-networth-value">{formatCurrency(netWorth)}</p>
             <p className="db-networth-sub">
-              {latestSnapshot 
+              {latestSnapshot
                 ? "emergency fund + savings + investments + rigs fund + cash on hand"
                 : "No snapshots yet. Complete setup wizard to get started."}
             </p>
@@ -174,7 +181,9 @@ export default function Dashboard() {
           <div className="db-networth-right">
             <div className="db-cash-pill">
               <span className="db-cash-pill-label">Cash on hand</span>
-              <span className="db-cash-pill-value">{formatCurrency(bucketData.cash_on_hand)}</span>
+              <span className="db-cash-pill-value">
+                {formatCurrency(bucketData.cash_on_hand)}
+              </span>
             </div>
           </div>
         </div>
@@ -182,13 +191,19 @@ export default function Dashboard() {
         {/* 4 Bucket cards */}
         <div className="db-buckets">
           {BUCKETS.map((b) => {
-            const pct = b.key === "emergency_fund" ? emergencyPct
-                      : b.key === "rigs_fund"      ? rigsPct
-                      : null;
+            const pct =
+              b.key === "emergency_fund"
+                ? emergencyPct
+                : b.key === "rigs_fund"
+                  ? rigsPct
+                  : null
             return (
               <div className="db-bucket-card" key={b.key}>
                 <div className="db-bucket-header">
-                  <div className="db-bucket-icon" style={{ background: b.iconBg }}>
+                  <div
+                    className="db-bucket-icon"
+                    style={{ background: b.iconBg }}
+                  >
                     <BucketIcon name={b.icon} color={b.iconColor} />
                   </div>
                   <span className="db-bucket-label">{b.label}</span>
@@ -208,7 +223,7 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
-            );
+            )
           })}
         </div>
 
@@ -217,17 +232,18 @@ export default function Dashboard() {
           <div className="db-chart-header">
             <div>
               <p className="db-chart-title">Net worth over time</p>
-              <p className="db-chart-sub">Daily snapshots of all your assets combined</p>
+              <p className="db-chart-sub">
+                Daily snapshots of all your assets combined
+              </p>
             </div>
           </div>
           <div className="db-chart-body">
             <NetWorthChart data={history} />
           </div>
         </div>
-
       </div>
     </>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -409,12 +425,44 @@ const DASH_STYLES = `
     .db-buckets { gap: 16px; }
     .db-bucket-card { padding: 1.375rem 1.5rem; }
   }
-`;
+`
 
 function BucketIcon({ name, color }: { name: string; color: string }) {
-  const p = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: "1.8", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (name === "shield") return <svg {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
-  if (name === "piggy")  return <svg {...p}><path d="M19 9a7 7 0 1 0-13.33 3H4a2 2 0 0 0 0 4h1.07A7 7 0 0 0 12 20a7 7 0 0 0 6.93-4H20a2 2 0 0 0 0-4h-1.67A6.97 6.97 0 0 0 19 9z" /><path d="M12 8v4"/></svg>;
-  if (name === "chart")  return <svg {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>;
-  return <svg {...p}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>;
+  const p = {
+    width: 15,
+    height: 15,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: color,
+    strokeWidth: "1.8",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  }
+  if (name === "shield")
+    return (
+      <svg {...p}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    )
+  if (name === "piggy")
+    return (
+      <svg {...p}>
+        <path d="M19 9a7 7 0 1 0-13.33 3H4a2 2 0 0 0 0 4h1.07A7 7 0 0 0 12 20a7 7 0 0 0 6.93-4H20a2 2 0 0 0 0-4h-1.67A6.97 6.97 0 0 0 19 9z" />
+        <path d="M12 8v4" />
+      </svg>
+    )
+  if (name === "chart")
+    return (
+      <svg {...p}>
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+        <polyline points="16 7 22 7 22 13" />
+      </svg>
+    )
+  return (
+    <svg {...p}>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  )
 }

@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
+import { useState } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { useAuthStore } from "../store/authStore"
 
 // ------------------------------------------------------------------
 // Langgam-It — Sidebar
@@ -13,10 +13,10 @@ import { useAuthStore } from "../store/authStore";
 // ------------------------------------------------------------------
 
 interface NavItem {
-  key: string;
-  label: string;
-  path: string;
-  icon: React.ReactNode;
+  key: string
+  label: string
+  path: string
+  icon: React.ReactNode
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -25,8 +25,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     path: "/dashboard",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="3" y="3" width="7" height="7" rx="1" />
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -39,8 +47,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Income",
     path: "/income",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M12 19V5M5 12l7-7 7 7" />
       </svg>
     ),
@@ -50,8 +66,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Expenses",
     path: "/expenses",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M12 5v14M5 12l7 7 7-7" />
       </svg>
     ),
@@ -61,8 +85,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Investments",
     path: "/investments",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
         <polyline points="16 7 22 7 22 13" />
       </svg>
@@ -73,8 +105,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Budget",
     path: "/budget",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="12" cy="12" r="10" />
         <path d="M12 6v6l4 2" />
       </svg>
@@ -85,8 +125,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Reports",
     path: "/reports",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         <polyline points="14 2 14 8 20 8" />
         <line x1="16" y1="13" x2="8" y2="13" />
@@ -95,34 +143,39 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
-];
+]
 
-const BOTTOM_NAV_ITEMS = NAV_ITEMS.slice(0, 4); // dashboard, income, expenses, investments
+const BOTTOM_NAV_ITEMS = NAV_ITEMS.slice(0, 4) // dashboard, income, expenses, investments
 
 export default function Sidebar() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const { user, logout } = useAuthStore();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { user, logout } = useAuthStore()
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const initials = [user?.first_name?.[0], user?.last_name?.[0]]
-    .filter(Boolean).join("").toUpperCase() || "U";
+  const initials =
+    [user?.first_name?.[0], user?.last_name?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() || "U"
 
-  const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(" ")
-    || user?.username || "User";
+  const fullName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+    user?.username ||
+    "User"
 
   function isActive(path: string) {
-    return location.pathname === path;
+    return location.pathname === path
   }
 
   function handleNav(path: string) {
-    navigate(path);
-    setDrawerOpen(false);
+    navigate(path)
+    setDrawerOpen(false)
   }
 
   function handleLogout() {
-    logout();
-    navigate("/", { replace: true });
+    logout()
+    navigate("/", { replace: true })
   }
 
   return (
@@ -131,7 +184,6 @@ export default function Sidebar() {
 
       {/* ── Desktop sidebar ─────────────────────────────────────── */}
       <aside className="sb-root">
-
         {/* Logo */}
         <div className="sb-logo">
           <div className="sb-logo-mark">
@@ -148,7 +200,7 @@ export default function Sidebar() {
           {NAV_ITEMS.map((item) => (
             <button
               key={item.key}
-              className={`sb-nav-item${isActive(item.path) ? " sb-nav-item--active" : ""}`}
+              className={`sb-nav-item${isActive(item.path) ? "sb-nav-item--active" : ""}`}
               onClick={() => handleNav(item.path)}
             >
               <span className="sb-nav-icon">{item.icon}</span>
@@ -167,10 +219,12 @@ export default function Sidebar() {
 
           {/* Settings */}
           <button
-            className={`sb-nav-item${isActive("/settings") ? " sb-nav-item--active" : ""}`}
+            className={`sb-nav-item${isActive("/settings") ? "sb-nav-item--active" : ""}`}
             onClick={() => handleNav("/settings")}
           >
-            <span className="sb-nav-icon"><SettingsIcon /></span>
+            <span className="sb-nav-icon">
+              <SettingsIcon />
+            </span>
             <span className="sb-nav-label">Settings</span>
           </button>
 
@@ -181,7 +235,11 @@ export default function Sidebar() {
               <span className="sb-user-name">{fullName}</span>
               <span className="sb-user-email">{user?.email || ""}</span>
             </div>
-            <button className="sb-logout" onClick={handleLogout} aria-label="Sign out">
+            <button
+              className="sb-logout"
+              onClick={handleLogout}
+              aria-label="Sign out"
+            >
               <LogoutIcon />
             </button>
           </div>
@@ -211,7 +269,7 @@ export default function Sidebar() {
       )}
 
       {/* ── Mobile: slide-in drawer ──────────────────────────────── */}
-      <div className={`sb-drawer${drawerOpen ? " sb-drawer--open" : ""}`}>
+      <div className={`sb-drawer${drawerOpen ? "sb-drawer--open" : ""}`}>
         <div className="sb-drawer-header">
           <div className="sb-topbar-logo">
             <div className="sb-logo-mark">
@@ -228,13 +286,15 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <p className="sb-section-label" style={{ padding: "0 1.25rem" }}>Menu</p>
+        <p className="sb-section-label" style={{ padding: "0 1.25rem" }}>
+          Menu
+        </p>
 
         <nav className="sb-drawer-nav">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.key}
-              className={`sb-nav-item${isActive(item.path) ? " sb-nav-item--active" : ""}`}
+              className={`sb-nav-item${isActive(item.path) ? "sb-nav-item--active" : ""}`}
               onClick={() => handleNav(item.path)}
             >
               <span className="sb-nav-icon">{item.icon}</span>
@@ -246,10 +306,12 @@ export default function Sidebar() {
           <div className="sb-divider" style={{ margin: "0.75rem 0" }} />
 
           <button
-            className={`sb-nav-item${isActive("/settings") ? " sb-nav-item--active" : ""}`}
+            className={`sb-nav-item${isActive("/settings") ? "sb-nav-item--active" : ""}`}
             onClick={() => handleNav("/settings")}
           >
-            <span className="sb-nav-icon"><SettingsIcon /></span>
+            <span className="sb-nav-icon">
+              <SettingsIcon />
+            </span>
             <span className="sb-nav-label">Settings</span>
           </button>
         </nav>
@@ -262,7 +324,11 @@ export default function Sidebar() {
               <span className="sb-user-name">{fullName}</span>
               <span className="sb-user-email">{user?.email || ""}</span>
             </div>
-            <button className="sb-logout" onClick={handleLogout} aria-label="Sign out">
+            <button
+              className="sb-logout"
+              onClick={handleLogout}
+              aria-label="Sign out"
+            >
               <LogoutIcon />
             </button>
           </div>
@@ -274,7 +340,7 @@ export default function Sidebar() {
         {BOTTOM_NAV_ITEMS.map((item) => (
           <button
             key={item.key}
-            className={`sb-bottom-nav-item${isActive(item.path) ? " sb-bottom-nav-item--active" : ""}`}
+            className={`sb-bottom-nav-item${isActive(item.path) ? "sb-bottom-nav-item--active" : ""}`}
             onClick={() => handleNav(item.path)}
           >
             <span className="sb-bottom-nav-icon">{item.icon}</span>
@@ -283,7 +349,7 @@ export default function Sidebar() {
         ))}
       </nav>
     </>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -669,7 +735,7 @@ const SIDEBAR_STYLES = `
     .sb-drawer     { display: flex; }
     .sb-bottom-nav { display: flex; }
   }
-`;
+`
 
 // ─────────────────────────────────────────────────────────────────────
 // Icons
@@ -678,51 +744,91 @@ const SIDEBAR_STYLES = `
 function LogoIcon({ color }: { color: string }) {
   return (
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-      <path d="M4 15L10 5L16 15" stroke={color} strokeWidth="1.6"
-        strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6.5 11H13.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M4 15L10 5L16 15"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 11H13.5"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
-  );
+  )
 }
 
 function SettingsIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
-  );
+  )
 }
 
 function LogoutIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
-  );
+  )
 }
 
 function HamburgerIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
       <line x1="3" y1="6" x2="21" y2="6" />
       <line x1="3" y1="12" x2="21" y2="12" />
       <line x1="3" y1="18" x2="21" y2="18" />
     </svg>
-  );
+  )
 }
 
 function CloseIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
-  );
+  )
 }

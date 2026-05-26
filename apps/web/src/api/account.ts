@@ -27,9 +27,9 @@ export async function getAccount(): Promise<FinancialAccount> {
 }
 
 // ── 2. Update account name ────────────────────────────────────────────
-export async function updateAccount(
-  payload: { name: string },
-): Promise<FinancialAccount> {
+export async function updateAccount(payload: {
+  name: string
+}): Promise<FinancialAccount> {
   const { data } = await apiClient.patch<FinancialAccount>("/account/", payload)
   return data
 }

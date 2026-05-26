@@ -39,7 +39,7 @@ export async function getFund(id: number): Promise<Fund> {
 // ── 4. Update fund ────────────────────────────────────────────────────
 export async function updateFund(
   id: number,
-  payload: FundUpdatePayload,
+  payload: FundUpdatePayload
 ): Promise<Fund> {
   const { data } = await apiClient.patch<Fund>(`/funds/${id}/`, payload)
   return data
@@ -54,11 +54,11 @@ export async function reorderFunds(order: number[]): Promise<Fund[]> {
 // ── 6. Close fund ─────────────────────────────────────────────────────
 export async function closeFund(
   id: number,
-  note: string,
+  note: string
 ): Promise<CloseFundResponse> {
   const { data } = await apiClient.post<CloseFundResponse>(
     `/funds/${id}/close/`,
-    { note },
+    { note }
   )
   return data
 }
@@ -66,23 +66,23 @@ export async function closeFund(
 // ── 7. Allocation suggestion ──────────────────────────────────────────
 export async function getAllocationSuggestion(): Promise<AllocationSuggestion> {
   const { data } = await apiClient.get<AllocationSuggestion>(
-    "/funds/allocation-suggestion/",
+    "/funds/allocation-suggestion/"
   )
   return data
 }
 
 // ── 8. Setup balances ─────────────────────────────────────────────────
 export async function setupBalances(
-  balances: Record<number, number>,
+  balances: Record<number, number>
 ): Promise<SetupBalancesResponse> {
   const body = {
     balances: Object.fromEntries(
-      Object.entries(balances).map(([id, amount]) => [id, String(amount)]),
+      Object.entries(balances).map(([id, amount]) => [id, String(amount)])
     ),
   }
   const { data } = await apiClient.post<SetupBalancesResponse>(
     "/setup/balances/",
-    body,
+    body
   )
   return data
 }

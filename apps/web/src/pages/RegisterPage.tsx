@@ -1,35 +1,35 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useRegisterStore } from "../store/registerStore";
-import { useAuthStore } from "../store/authStore";
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { useRegisterStore } from "../store/registerStore"
+import { useAuthStore } from "../store/authStore"
 
 interface FormState {
-  username: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-  confirm_password: string;
+  username: string
+  first_name: string
+  last_name: string
+  email: string
+  password: string
+  confirm_password: string
 }
 
 interface FormErrors {
-  username?: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  password?: string;
-  confirm_password?: string;
+  username?: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  password?: string
+  confirm_password?: string
 }
 
 export default function RegisterPage() {
-  const navigate = useNavigate();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const navigate = useNavigate()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   // ── only need register, isLoading, error, clearError ─────────────
   // isSuccess / resetSuccess removed — success is handled imperatively
-  const { register, isLoading, error, clearError } = useRegisterStore();
+  const { register, isLoading, error, clearError } = useRegisterStore()
 
   const [form, setForm] = useState<FormState>({
     username: "",
@@ -38,45 +38,48 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirm_password: "",
-  });
+  })
 
-  const [errors, setErrors]             = useState<FormErrors>({});
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirm, setShowConfirm]   = useState<boolean>(false);
-  const [agreed, setAgreed]             = useState<boolean>(false);
-  const [showSuccess, setShowSuccess]   = useState<boolean>(false);
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [showPassword, setShowPassword] = useState<boolean>(false)
+  const [showConfirm, setShowConfirm] = useState<boolean>(false)
+  const [agreed, setAgreed] = useState<boolean>(false)
+  const [showSuccess, setShowSuccess] = useState<boolean>(false)
 
   // Already logged in → go to dashboard
   useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) navigate("/dashboard", { replace: true })
+  }, [isAuthenticated, navigate])
 
   // Clear store error when user edits any field
   useEffect(() => {
-    if (error) clearError();
+    if (error) clearError()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]);
+  }, [form])
 
   function validate(): boolean {
-    const next: FormErrors = {};
-    if (!form.username.trim())           next.username         = "Username is required.";
-    if (!form.first_name.trim())         next.first_name       = "First name is required.";
-    if (!form.last_name.trim())          next.last_name        = "Last name is required.";
-    if (!form.email.trim())              next.email            = "Email is required.";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email     = "Enter a valid email.";
-    if (!form.password)                  next.password         = "Password is required.";
-    else if (form.password.length < 8)   next.password         = "At least 8 characters.";
-    if (!form.confirm_password)          next.confirm_password = "Please confirm your password.";
-    else if (form.password !== form.confirm_password) next.confirm_password = "Passwords do not match.";
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    const next: FormErrors = {}
+    if (!form.username.trim()) next.username = "Username is required."
+    if (!form.first_name.trim()) next.first_name = "First name is required."
+    if (!form.last_name.trim()) next.last_name = "Last name is required."
+    if (!form.email.trim()) next.email = "Email is required."
+    else if (!/\S+@\S+\.\S+/.test(form.email))
+      next.email = "Enter a valid email."
+    if (!form.password) next.password = "Password is required."
+    else if (form.password.length < 8) next.password = "At least 8 characters."
+    if (!form.confirm_password)
+      next.confirm_password = "Please confirm your password."
+    else if (form.password !== form.confirm_password)
+      next.confirm_password = "Passwords do not match."
+    setErrors(next)
+    return Object.keys(next).length === 0
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
     if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
   }
 
@@ -84,12 +87,12 @@ export default function RegisterPage() {
   // await register() only resolves without throwing on a 201 success.
   // So everything after it is guaranteed to run only on success.
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
+    e.preventDefault()
+    if (!validate()) return
     try {
-      await register(form);
-      setShowSuccess(true);                          // flip to success screen
-      setTimeout(() => navigate("/", { replace: true }), 2600); // then go to login
+      await register(form)
+      setShowSuccess(true) // flip to success screen
+      setTimeout(() => navigate("/", { replace: true }), 2600) // then go to login
     } catch {
       // error is already set in the store and shown in the banner above the form
     }
@@ -99,17 +102,29 @@ export default function RegisterPage() {
   if (showSuccess) {
     return (
       <>
-        <style>{SHARED_STYLES}{SUCCESS_STYLES}</style>
+        <style>
+          {SHARED_STYLES}
+          {SUCCESS_STYLES}
+        </style>
         <div className="su-root">
           <div className="su-card">
             <div className="su-logo-wrap">
-              <div className="su-logo-mark"><LogoIcon color="var(--text-1)" /></div>
+              <div className="su-logo-mark">
+                <LogoIcon color="var(--text-1)" />
+              </div>
               <span className="su-logo-name">Langgam-It</span>
             </div>
             <div className="su-icon-ring">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                stroke="var(--green-icon)" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--green-icon)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
@@ -121,26 +136,35 @@ export default function RegisterPage() {
           </div>
         </div>
       </>
-    );
+    )
   }
 
   // ── Register form ────────────────────────────────────────────────
   return (
     <>
-      <style>{SHARED_STYLES}{FORM_STYLES}</style>
+      <style>
+        {SHARED_STYLES}
+        {FORM_STYLES}
+      </style>
       <div className="rg-root">
         <div className="rg-shell">
-
           {/* Left pane */}
           <div className="rg-left">
             <div className="rg-logo">
-              <div className="rg-logo-mark"><LogoIcon color="var(--text-1)" /></div>
+              <div className="rg-logo-mark">
+                <LogoIcon color="var(--text-1)" />
+              </div>
               <span className="rg-logo-name">Langgam-It</span>
             </div>
             <div className="rg-brand">
-              <p className="rg-headline">Start your financial<br />journey today.</p>
+              <p className="rg-headline">
+                Start your financial
+                <br />
+                journey today.
+              </p>
               <p className="rg-tagline">
-                Create your free account and take control of your income, spending, and investments.
+                Create your free account and take control of your income,
+                spending, and investments.
               </p>
               <div className="rg-steps">
                 <div className="rg-step">
@@ -174,7 +198,9 @@ export default function RegisterPage() {
           {/* Right pane */}
           <div className="rg-right">
             <div className="rg-mobile-logo">
-              <div className="rg-logo-mark"><LogoIcon color="var(--text-1)" /></div>
+              <div className="rg-logo-mark">
+                <LogoIcon color="var(--text-1)" />
+              </div>
               <span className="rg-logo-name">Langgam-It</span>
             </div>
 
@@ -185,152 +211,233 @@ export default function RegisterPage() {
 
             {error && (
               <div className="rg-error-banner" role="alert">
-                <span className="rg-error-banner-icon"><AlertIcon /></span>
+                <span className="rg-error-banner-icon">
+                  <AlertIcon />
+                </span>
                 <span className="rg-error-banner-text">{error}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit} noValidate>
-
               {/* Username */}
               <div className="rg-field-full">
-                <label className="rg-label" htmlFor="rg-username">Username</label>
+                <label className="rg-label" htmlFor="rg-username">
+                  Username
+                </label>
                 <div className="rg-input-wrap">
-                  <span className="rg-input-icon"><AtIcon /></span>
+                  <span className="rg-input-icon">
+                    <AtIcon />
+                  </span>
                   <input
                     id="rg-username"
-                    className={`rg-input${errors.username ? " rg-input-error" : ""}`}
-                    type="text" name="username" placeholder="yourhandle"
-                    autoComplete="username" value={form.username}
+                    className={`rg-input${errors.username ? "rg-input-error" : ""}`}
+                    type="text"
+                    name="username"
+                    placeholder="yourhandle"
+                    autoComplete="username"
+                    value={form.username}
                     onChange={handleChange}
                   />
                 </div>
-                {errors.username && <span className="rg-error-msg">{errors.username}</span>}
+                {errors.username && (
+                  <span className="rg-error-msg">{errors.username}</span>
+                )}
               </div>
 
               {/* First + Last */}
               <div className="rg-row">
                 <div className="rg-field">
-                  <label className="rg-label" htmlFor="rg-first">First name</label>
+                  <label className="rg-label" htmlFor="rg-first">
+                    First name
+                  </label>
                   <div className="rg-input-wrap">
-                    <span className="rg-input-icon"><UserIcon /></span>
+                    <span className="rg-input-icon">
+                      <UserIcon />
+                    </span>
                     <input
                       id="rg-first"
-                      className={`rg-input${errors.first_name ? " rg-input-error" : ""}`}
-                      type="text" name="first_name" placeholder="Juan"
-                      autoComplete="given-name" value={form.first_name}
+                      className={`rg-input${errors.first_name ? "rg-input-error" : ""}`}
+                      type="text"
+                      name="first_name"
+                      placeholder="Juan"
+                      autoComplete="given-name"
+                      value={form.first_name}
                       onChange={handleChange}
                     />
                   </div>
-                  {errors.first_name && <span className="rg-error-msg">{errors.first_name}</span>}
+                  {errors.first_name && (
+                    <span className="rg-error-msg">{errors.first_name}</span>
+                  )}
                 </div>
                 <div className="rg-field">
-                  <label className="rg-label" htmlFor="rg-last">Last name</label>
+                  <label className="rg-label" htmlFor="rg-last">
+                    Last name
+                  </label>
                   <div className="rg-input-wrap">
-                    <span className="rg-input-icon"><UserIcon /></span>
+                    <span className="rg-input-icon">
+                      <UserIcon />
+                    </span>
                     <input
                       id="rg-last"
-                      className={`rg-input${errors.last_name ? " rg-input-error" : ""}`}
-                      type="text" name="last_name" placeholder="dela Cruz"
-                      autoComplete="family-name" value={form.last_name}
+                      className={`rg-input${errors.last_name ? "rg-input-error" : ""}`}
+                      type="text"
+                      name="last_name"
+                      placeholder="dela Cruz"
+                      autoComplete="family-name"
+                      value={form.last_name}
                       onChange={handleChange}
                     />
                   </div>
-                  {errors.last_name && <span className="rg-error-msg">{errors.last_name}</span>}
+                  {errors.last_name && (
+                    <span className="rg-error-msg">{errors.last_name}</span>
+                  )}
                 </div>
               </div>
 
               {/* Email */}
               <div className="rg-field-full">
-                <label className="rg-label" htmlFor="rg-email">Email address</label>
+                <label className="rg-label" htmlFor="rg-email">
+                  Email address
+                </label>
                 <div className="rg-input-wrap">
-                  <span className="rg-input-icon"><MailIcon /></span>
+                  <span className="rg-input-icon">
+                    <MailIcon />
+                  </span>
                   <input
                     id="rg-email"
-                    className={`rg-input${errors.email ? " rg-input-error" : ""}`}
-                    type="email" name="email" placeholder="you@example.com"
-                    autoComplete="email" value={form.email}
+                    className={`rg-input${errors.email ? "rg-input-error" : ""}`}
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    value={form.email}
                     onChange={handleChange}
                   />
                 </div>
-                {errors.email && <span className="rg-error-msg">{errors.email}</span>}
+                {errors.email && (
+                  <span className="rg-error-msg">{errors.email}</span>
+                )}
               </div>
 
               {/* Password + Confirm */}
               <div className="rg-row">
                 <div className="rg-field">
-                  <label className="rg-label" htmlFor="rg-password">Password</label>
+                  <label className="rg-label" htmlFor="rg-password">
+                    Password
+                  </label>
                   <div className="rg-input-wrap">
-                    <span className="rg-input-icon"><LockIcon /></span>
+                    <span className="rg-input-icon">
+                      <LockIcon />
+                    </span>
                     <input
                       id="rg-password"
-                      className={`rg-input rg-input-pw${errors.password ? " rg-input-error" : ""}`}
+                      className={`rg-input rg-input-pw${errors.password ? "rg-input-error" : ""}`}
                       type={showPassword ? "text" : "password"}
-                      name="password" placeholder="Min. 8 chars"
-                      autoComplete="new-password" value={form.password}
+                      name="password"
+                      placeholder="Min. 8 chars"
+                      autoComplete="new-password"
+                      value={form.password}
                       onChange={handleChange}
                     />
-                    <button type="button" className="rg-eye"
+                    <button
+                      type="button"
+                      className="rg-eye"
                       aria-label={showPassword ? "Hide" : "Show"}
-                      onClick={() => setShowPassword((v) => !v)}>
+                      onClick={() => setShowPassword((v) => !v)}
+                    >
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   </div>
-                  {errors.password && <span className="rg-error-msg">{errors.password}</span>}
+                  {errors.password && (
+                    <span className="rg-error-msg">{errors.password}</span>
+                  )}
                 </div>
                 <div className="rg-field">
-                  <label className="rg-label" htmlFor="rg-confirm">Confirm password</label>
+                  <label className="rg-label" htmlFor="rg-confirm">
+                    Confirm password
+                  </label>
                   <div className="rg-input-wrap">
-                    <span className="rg-input-icon"><LockIcon /></span>
+                    <span className="rg-input-icon">
+                      <LockIcon />
+                    </span>
                     <input
                       id="rg-confirm"
-                      className={`rg-input rg-input-pw${errors.confirm_password ? " rg-input-error" : ""}`}
+                      className={`rg-input rg-input-pw${errors.confirm_password ? "rg-input-error" : ""}`}
                       type={showConfirm ? "text" : "password"}
-                      name="confirm_password" placeholder="Repeat password"
-                      autoComplete="new-password" value={form.confirm_password}
+                      name="confirm_password"
+                      placeholder="Repeat password"
+                      autoComplete="new-password"
+                      value={form.confirm_password}
                       onChange={handleChange}
                     />
-                    <button type="button" className="rg-eye"
+                    <button
+                      type="button"
+                      className="rg-eye"
                       aria-label={showConfirm ? "Hide" : "Show"}
-                      onClick={() => setShowConfirm((v) => !v)}>
+                      onClick={() => setShowConfirm((v) => !v)}
+                    >
                       {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   </div>
-                  {errors.confirm_password && <span className="rg-error-msg">{errors.confirm_password}</span>}
+                  {errors.confirm_password && (
+                    <span className="rg-error-msg">
+                      {errors.confirm_password}
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* Terms */}
               <div className="rg-terms">
-                <input id="rg-agree" type="checkbox" checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)} />
+                <input
+                  id="rg-agree"
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                />
                 <label htmlFor="rg-agree" className="rg-terms-text">
                   I agree to the{" "}
-                  <button type="button" className="rg-terms-link">Terms of Service</button>
-                  {" "}and{" "}
-                  <button type="button" className="rg-terms-link">Privacy Policy</button>
+                  <button type="button" className="rg-terms-link">
+                    Terms of Service
+                  </button>{" "}
+                  and{" "}
+                  <button type="button" className="rg-terms-link">
+                    Privacy Policy
+                  </button>
                 </label>
               </div>
 
-              <button type="submit" className="rg-btn-primary"
-                disabled={isLoading || !agreed}>
-                {isLoading
-                  ? <span className="rg-spinner" />
-                  : <><span>Create account</span><ArrowRightIcon /></>}
+              <button
+                type="submit"
+                className="rg-btn-primary"
+                disabled={isLoading || !agreed}
+              >
+                {isLoading ? (
+                  <span className="rg-spinner" />
+                ) : (
+                  <>
+                    <span>Create account</span>
+                    <ArrowRightIcon />
+                  </>
+                )}
               </button>
             </form>
 
             <p className="rg-signin">
               Already have an account?{" "}
-              <button type="button" className="rg-signin-link"
-                onClick={() => navigate("/")}>Sign in</button>
+              <button
+                type="button"
+                className="rg-signin-link"
+                onClick={() => navigate("/")}
+              >
+                Sign in
+              </button>
             </p>
           </div>
-
         </div>
       </div>
     </>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -356,7 +463,7 @@ const SHARED_STYLES = `
       --error:#F0997B; --error-bg:#4A1B0C; --green-bg:#173404; --green-icon:#97C459;
     }
   }
-`;
+`
 
 const SUCCESS_STYLES = `
   .su-root { font-family:var(--sans); min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg-page); padding:24px 16px; }
@@ -372,7 +479,7 @@ const SUCCESS_STYLES = `
   .su-bar-track { width:100%; height:3px; background:var(--bg-surface); border-radius:99px; overflow:hidden; }
   .su-bar-fill { height:100%; width:0%; background:var(--text-1); border-radius:99px; animation:su-progress 2.4s cubic-bezier(0.4,0,0.2,1) forwards; }
   @keyframes su-progress { 0%{width:0%} 60%{width:75%} 85%{width:90%} 100%{width:100%} }
-`;
+`
 
 const FORM_STYLES = `
   .rg-root { font-family:var(--sans); min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg-page); padding:24px 16px; }
@@ -425,7 +532,7 @@ const FORM_STYLES = `
   .rg-signin-link { color:var(--text-1); font-weight:500; text-decoration:underline; background:none; border:none; cursor:pointer; font-family:var(--sans); font-size:13px; padding:0; }
   @media (max-width:680px) { .rg-left{display:none !important} .rg-right{padding:2rem 1.5rem} .rg-mobile-logo{display:flex !important} .rg-shell{border-radius:var(--radius-md)} }
   @media (max-width:480px) { .rg-right{padding:1.5rem 1.25rem} .rg-row{grid-template-columns:1fr;gap:0;margin-bottom:0} .rg-row .rg-field{margin-bottom:13px} }
-`;
+`
 
 // ─────────────────────────────────────────────────────────────────────
 // Icons
@@ -434,66 +541,156 @@ const FORM_STYLES = `
 function LogoIcon({ color }: { color: string }) {
   return (
     <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-      <path d="M4 15L10 5L16 15" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6.5 11H13.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M4 15L10 5L16 15"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 11H13.5"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
-  );
+  )
 }
 function AlertIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
     </svg>
-  );
+  )
 }
 function AtIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
     </svg>
-  );
+  )
 }
 function UserIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
-  );
+  )
 }
 function MailIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
-  );
+  )
 }
 function LockIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
-  );
+  )
 }
 function EyeIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
-  );
+  )
 }
 function EyeOffIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
       <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
-  );
+  )
 }
 function ArrowRightIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M5 12h14M12 5l7 7-7 7" />
     </svg>
-  );
+  )
 }

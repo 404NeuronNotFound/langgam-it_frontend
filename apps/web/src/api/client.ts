@@ -1,9 +1,6 @@
 // src/api/client.ts
 
-import axios, {
-  type AxiosError,
-  type InternalAxiosRequestConfig,
-} from "axios"
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 
 // ── Config ────────────────────────────────────────────────────────────
 const BASE_URL = (
@@ -90,7 +87,7 @@ apiClient.interceptors.request.use(
     }
     return config
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 )
 
 // ── Response interceptor ──────────────────────────────────────────────
@@ -138,7 +135,7 @@ apiClient.interceptors.response.use(
     try {
       const { data } = await axios.post<{ access: string }>(
         `${BASE_URL}/auth/token/refresh/`,
-        { refresh: refreshToken },
+        { refresh: refreshToken }
       )
 
       const newAccessToken = data.access
@@ -156,7 +153,7 @@ apiClient.interceptors.response.use(
     } finally {
       isRefreshing = false
     }
-  },
+  }
 )
 
 export default apiClient

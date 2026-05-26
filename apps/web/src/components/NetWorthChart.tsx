@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import {
   LineChart,
   Line,
@@ -9,20 +9,20 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
+} from "recharts"
 
 interface DataPoint {
-  month: string;
-  net_worth: number;
+  month: string
+  net_worth: number
 }
 
 interface Props {
-  data: DataPoint[];
+  data: DataPoint[]
 }
 
 function CustomTooltip({ active, payload }: any) {
-  if (!active || !payload?.length) return null;
-  const val: number = payload[0].value;
+  if (!active || !payload?.length) return null
+  const val: number = payload[0].value
   return (
     <div style={tooltipStyle}>
       <p style={tooltipLabel}>{payload[0].payload.month}</p>
@@ -34,23 +34,31 @@ function CustomTooltip({ active, payload }: any) {
         }).format(val)}
       </p>
     </div>
-  );
+  )
 }
 
 export default function NetWorthChart({ data }: Props) {
-  const [chartKey, setChartKey] = useState(0);
+  const [chartKey, setChartKey] = useState(0)
 
   useEffect(() => {
     // Force re-render when data changes
-    setChartKey(prev => prev + 1);
-  }, [data]);
+    setChartKey((prev) => prev + 1)
+  }, [data])
 
   if (!data || data.length === 0) {
     return (
       <div style={emptyStyle}>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ color: "var(--text-3)", marginBottom: 8 }}>
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ color: "var(--text-3)", marginBottom: 8 }}
+        >
           <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
           <polyline points="16 7 22 7 22 13" />
         </svg>
@@ -58,19 +66,19 @@ export default function NetWorthChart({ data }: Props) {
           Net worth history will appear here after your first month.
         </p>
       </div>
-    );
+    )
   }
 
   // Get min and max values
-  const values = data.map(d => d.net_worth);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+  const values = data.map((d) => d.net_worth)
+  const minValue = Math.min(...values)
+  const maxValue = Math.max(...values)
 
   // Set explicit domain - no padding, just use actual min/max
-  const yMin = Math.floor(minValue / 10000) * 10000; // Round down to nearest 10k
-  const yMax = Math.ceil(maxValue / 10000) * 10000;  // Round up to nearest 10k
+  const yMin = Math.floor(minValue / 10000) * 10000 // Round down to nearest 10k
+  const yMax = Math.ceil(maxValue / 10000) * 10000 // Round up to nearest 10k
 
-  const chartHeight = 280;
+  const chartHeight = 280
 
   return (
     <ResponsiveContainer width="100%" height={chartHeight} key={chartKey}>
@@ -96,9 +104,7 @@ export default function NetWorthChart({ data }: Props) {
           axisLine={false}
           tickLine={false}
           width={70}
-          tickFormatter={(value) =>
-            `₱${(value / 1000).toFixed(0)}K`
-          }
+          tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}K`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Line
@@ -112,7 +118,7 @@ export default function NetWorthChart({ data }: Props) {
         />
       </LineChart>
     </ResponsiveContainer>
-  );
+  )
 }
 
 const tooltipStyle: React.CSSProperties = {
@@ -121,20 +127,20 @@ const tooltipStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: "10px 12px",
   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-};
+}
 
 const tooltipLabel: React.CSSProperties = {
   fontSize: 12,
   color: "var(--text-3)",
   marginBottom: 4,
-};
+}
 
 const tooltipValue: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
   color: "var(--text-1)",
   margin: 0,
-};
+}
 
 const emptyStyle: React.CSSProperties = {
   height: 280,
@@ -144,4 +150,4 @@ const emptyStyle: React.CSSProperties = {
   justifyContent: "center",
   gap: 8,
   textAlign: "center",
-};
+}

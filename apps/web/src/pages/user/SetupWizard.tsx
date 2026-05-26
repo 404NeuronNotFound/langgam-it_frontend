@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
-import { useFinanceStore } from "../../store/financeStore";
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "../../store/authStore"
+import { useFinanceStore } from "../../store/financeStore"
 
 // ------------------------------------------------------------------
 // Langgam-It — Setup Wizard
@@ -12,27 +12,27 @@ import { useFinanceStore } from "../../store/financeStore";
 // ------------------------------------------------------------------
 
 interface SetupForm {
-  emergency_fund: string;
-  savings: string;
-  rigs_fund: string;
-  cash_on_hand: string;
+  emergency_fund: string
+  savings: string
+  rigs_fund: string
+  cash_on_hand: string
 }
 
 interface SetupErrors {
-  emergency_fund?: string;
-  savings?: string;
-  rigs_fund?: string;
-  cash_on_hand?: string;
+  emergency_fund?: string
+  savings?: string
+  rigs_fund?: string
+  cash_on_hand?: string
 }
 
 const FIELDS: {
-  key: keyof SetupForm;
-  label: string;
-  description: string;
-  placeholder: string;
-  iconColor: string;
-  iconBg: string;
-  icon: string;
+  key: keyof SetupForm
+  label: string
+  description: string
+  placeholder: string
+  iconColor: string
+  iconBg: string
+  icon: string
 }[] = [
   {
     key: "emergency_fund",
@@ -70,66 +70,66 @@ const FIELDS: {
     iconBg: "var(--bg-surface)",
     icon: "wallet",
   },
-];
+]
 
 export default function SetupWizard() {
-  const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const { updateProfile, fetchProfile } = useFinanceStore();
+  const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const { updateProfile, fetchProfile } = useFinanceStore()
 
   const [form, setForm] = useState<SetupForm>({
     emergency_fund: "",
     savings: "",
     rigs_fund: "",
     cash_on_hand: "",
-  });
+  })
 
-  const [errors, setErrors] = useState<SetupErrors>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"form" | "success">("form");
+  const [errors, setErrors] = useState<SetupErrors>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState<"form" | "success">("form")
 
-  const firstName = user?.first_name || user?.username || "there";
+  const firstName = user?.first_name || user?.username || "there"
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     // Allow only numbers and decimal point
-    if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return
+    setForm((prev) => ({ ...prev, [name]: value }))
     if (errors[name as keyof SetupErrors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
   }
 
   function validate(): boolean {
-    const next: SetupErrors = {};
+    const next: SetupErrors = {}
     Object.entries(form).forEach(([key, val]) => {
       if (val !== "" && isNaN(parseFloat(val))) {
-        next[key as keyof SetupErrors] = "Enter a valid amount.";
+        next[key as keyof SetupErrors] = "Enter a valid amount."
       }
-    });
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    })
+    setErrors(next)
+    return Object.keys(next).length === 0
   }
 
   // Compute net worth preview
   const netWorth = Object.values(form).reduce((sum, val) => {
-    const n = parseFloat(val);
-    return sum + (isNaN(n) ? 0 : n);
-  }, 0);
+    const n = parseFloat(val)
+    return sum + (isNaN(n) ? 0 : n)
+  }, 0)
 
   function formatPHP(val: number) {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
       minimumFractionDigits: 2,
-    }).format(val);
+    }).format(val)
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!validate()) return;
-    
-    setIsLoading(true);
+    e.preventDefault()
+    if (!validate()) return
+
+    setIsLoading(true)
     try {
       // Update profile with bucket values (backend creates snapshot automatically)
       await updateProfile({
@@ -138,18 +138,18 @@ export default function SetupWizard() {
         savings: parseFloat(form.savings) || 0,
         rigs_fund: parseFloat(form.rigs_fund) || 0,
         cash_on_hand: parseFloat(form.cash_on_hand) || 0,
-      });
-      
+      })
+
       // Fetch updated profile to ensure setup completion check works
-      await fetchProfile();
-      
-      setStep("success");
-      setTimeout(() => navigate("/dashboard"), 2200);
+      await fetchProfile()
+
+      setStep("success")
+      setTimeout(() => navigate("/dashboard"), 2200)
     } catch (error) {
-      console.error("Setup failed:", error);
-      setErrors({ emergency_fund: "Setup failed. Please try again." });
+      console.error("Setup failed:", error)
+      setErrors({ emergency_fund: "Setup failed. Please try again." })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -157,46 +157,65 @@ export default function SetupWizard() {
   if (step === "success") {
     return (
       <>
-        <style>{SHARED_STYLES}{SUCCESS_STYLES}</style>
+        <style>
+          {SHARED_STYLES}
+          {SUCCESS_STYLES}
+        </style>
         <div className="sw-success-root">
           <div className="sw-success-card">
             <div className="sw-success-logo">
-              <div className="sw-logo-mark"><LogoIcon color="var(--text-1)" /></div>
+              <div className="sw-logo-mark">
+                <LogoIcon color="var(--text-1)" />
+              </div>
               <span className="sw-logo-name">Langgam-It</span>
             </div>
             <div className="sw-success-ring">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                stroke="var(--green-icon)" strokeWidth="2.2"
-                strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--green-icon)"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
             <h2 className="sw-success-title">You're all set!</h2>
             <p className="sw-success-sub">Taking you to your dashboard…</p>
-            <div className="sw-bar-track"><div className="sw-bar-fill" /></div>
+            <div className="sw-bar-track">
+              <div className="sw-bar-fill" />
+            </div>
           </div>
         </div>
       </>
-    );
+    )
   }
 
   // ── Setup form ────────────────────────────────────────────────────
   return (
     <>
-      <style>{SHARED_STYLES}{FORM_STYLES}</style>
+      <style>
+        {SHARED_STYLES}
+        {FORM_STYLES}
+      </style>
       <div className="sw-root">
         <div className="sw-container">
-
           {/* Header */}
           <div className="sw-header">
             <div className="sw-logo">
-              <div className="sw-logo-mark"><LogoIcon color="var(--text-1)" /></div>
+              <div className="sw-logo-mark">
+                <LogoIcon color="var(--text-1)" />
+              </div>
               <span className="sw-logo-name">Langgam-It</span>
             </div>
             <div className="sw-header-text">
               <h1 className="sw-title">Welcome, {firstName}.</h1>
               <p className="sw-subtitle">
-                Tell us what you currently have so we can calculate your net worth and start tracking.
+                Tell us what you currently have so we can calculate your net
+                worth and start tracking.
               </p>
             </div>
           </div>
@@ -209,7 +228,10 @@ export default function SetupWizard() {
               {FIELDS.map((field) => (
                 <div className="sw-field" key={field.key}>
                   <div className="sw-field-meta">
-                    <div className="sw-field-icon" style={{ background: field.iconBg }}>
+                    <div
+                      className="sw-field-icon"
+                      style={{ background: field.iconBg }}
+                    >
                       <FieldIcon name={field.icon} color={field.iconColor} />
                     </div>
                     <div>
@@ -223,7 +245,7 @@ export default function SetupWizard() {
                     <span className="sw-currency">₱</span>
                     <input
                       id={`sw-${field.key}`}
-                      className={`sw-input${errors[field.key] ? " sw-input-error" : ""}`}
+                      className={`sw-input${errors[field.key] ? "sw-input-error" : ""}`}
                       type="text"
                       inputMode="decimal"
                       name={field.key}
@@ -244,14 +266,21 @@ export default function SetupWizard() {
                 className="sw-btn-primary"
                 disabled={isLoading}
               >
-                {isLoading ? <span className="sw-spinner" /> : (
-                  <><span>Calculate my net worth</span><ArrowRightIcon /></>
+                {isLoading ? (
+                  <span className="sw-spinner" />
+                ) : (
+                  <>
+                    <span>Calculate my net worth</span>
+                    <ArrowRightIcon />
+                  </>
                 )}
               </button>
 
               <p className="sw-skip">
                 Leave any field blank to start at{" "}
-                <span style={{ color: "var(--text-1)", fontWeight: 500 }}>₱0.00</span>
+                <span style={{ color: "var(--text-1)", fontWeight: 500 }}>
+                  ₱0.00
+                </span>
                 — you can update these anytime.
               </p>
             </form>
@@ -268,35 +297,46 @@ export default function SetupWizard() {
 
               <div className="sw-breakdown">
                 {FIELDS.map((field) => {
-                  const val = parseFloat(form[field.key]) || 0;
-                  const pct = netWorth > 0 ? (val / netWorth) * 100 : 0;
+                  const val = parseFloat(form[field.key]) || 0
+                  const pct = netWorth > 0 ? (val / netWorth) * 100 : 0
                   return (
                     <div className="sw-breakdown-row" key={field.key}>
                       <div className="sw-breakdown-left">
-                        <div className="sw-breakdown-dot" style={{ background: field.iconColor }} />
-                        <span className="sw-breakdown-label">{field.label}</span>
+                        <div
+                          className="sw-breakdown-dot"
+                          style={{ background: field.iconColor }}
+                        />
+                        <span className="sw-breakdown-label">
+                          {field.label}
+                        </span>
                       </div>
                       <div className="sw-breakdown-right">
-                        <span className="sw-breakdown-val">{formatPHP(val)}</span>
-                        <span className="sw-breakdown-pct">{pct.toFixed(0)}%</span>
+                        <span className="sw-breakdown-val">
+                          {formatPHP(val)}
+                        </span>
+                        <span className="sw-breakdown-pct">
+                          {pct.toFixed(0)}%
+                        </span>
                       </div>
                       <div className="sw-breakdown-bar-track">
                         <div
                           className="sw-breakdown-bar-fill"
-                          style={{ width: `${pct}%`, background: field.iconColor }}
+                          style={{
+                            width: `${pct}%`,
+                            background: field.iconColor,
+                          }}
                         />
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -343,7 +383,7 @@ const SHARED_STYLES = `
       --amber-bg:   #412402;  --amber-icon: #EF9F27;
     }
   }
-`;
+`
 
 const SUCCESS_STYLES = `
   .sw-success-root { font-family:var(--sans); min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg-page); padding:24px 16px; }
@@ -359,7 +399,7 @@ const SUCCESS_STYLES = `
   .sw-bar-track { width:100%; height:3px; background:var(--bg-surface); border-radius:99px; overflow:hidden; }
   .sw-bar-fill { height:100%; width:0%; background:var(--text-1); border-radius:99px; animation:sw-progress 2s cubic-bezier(0.4,0,0.2,1) forwards; }
   @keyframes sw-progress { 0%{width:0%} 60%{width:75%} 85%{width:90%} 100%{width:100%} }
-`;
+`
 
 const FORM_STYLES = `
   .sw-root { font-family:var(--sans); min-height:100vh; background:var(--bg-page); padding:2rem 1.5rem 3rem; }
@@ -455,7 +495,7 @@ const FORM_STYLES = `
     .sw-root { padding:1.25rem 0.875rem 5rem; }
     .sw-form { padding:1.25rem; }
   }
-`;
+`
 
 // ─────────────────────────────────────────────────────────────────────
 // Icons
@@ -464,45 +504,101 @@ const FORM_STYLES = `
 function LogoIcon({ color }: { color: string }) {
   return (
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-      <path d="M4 15L10 5L16 15" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6.5 11H13.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M4 15L10 5L16 15"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 11H13.5"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
-  );
+  )
 }
 
 function ArrowRightIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M5 12h14M12 5l7 7-7 7" />
     </svg>
-  );
+  )
 }
 
 function FieldIcon({ name, color }: { name: string; color: string }) {
-  const props = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: "1.8", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  
-  if (name === "trending-up") return (
-    <svg {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-  );
-  
-  if (name === "trending-down") return (
-    <svg {...props}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></svg>
-  );
-  
-  if (name === "shield") return (
-    <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-  );
-  if (name === "piggy") return (
-    <svg {...props}><path d="M19 9a7 7 0 1 0-13.33 3H4a2 2 0 0 0 0 4h1.07A7 7 0 0 0 12 20a7 7 0 0 0 6.93-4H20a2 2 0 0 0 0-4h-1.67A6.97 6.97 0 0 0 19 9z" /><path d="M12 8v4"/></svg>
-  );
-  if (name === "chart") return (
-    <svg {...props}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>
-  );
-  if (name === "box") return (
-    <svg {...props}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
-  );
+  const props = {
+    width: 16,
+    height: 16,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: color,
+    strokeWidth: "1.8",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  }
+
+  if (name === "trending-up")
+    return (
+      <svg {...props}>
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </svg>
+    )
+
+  if (name === "trending-down")
+    return (
+      <svg {...props}>
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+        <polyline points="17 18 23 18 23 12" />
+      </svg>
+    )
+
+  if (name === "shield")
+    return (
+      <svg {...props}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    )
+  if (name === "piggy")
+    return (
+      <svg {...props}>
+        <path d="M19 9a7 7 0 1 0-13.33 3H4a2 2 0 0 0 0 4h1.07A7 7 0 0 0 12 20a7 7 0 0 0 6.93-4H20a2 2 0 0 0 0-4h-1.67A6.97 6.97 0 0 0 19 9z" />
+        <path d="M12 8v4" />
+      </svg>
+    )
+  if (name === "chart")
+    return (
+      <svg {...props}>
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+        <polyline points="16 7 22 7 22 13" />
+      </svg>
+    )
+  if (name === "box")
+    return (
+      <svg {...props}>
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    )
   // wallet
   return (
-    <svg {...props}><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M16 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /></svg>
-  );
+    <svg {...props}>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M16 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+    </svg>
+  )
 }

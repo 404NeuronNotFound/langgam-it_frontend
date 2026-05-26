@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useExpenseStore } from "../../store/expenseStore";
-import { useCycleStore } from "../../store/cycleStore";
-import { useFinanceStore } from "../../store/financeStore";
+import { useState, useEffect } from "react"
+import { useExpenseStore } from "../../store/expenseStore"
+import { useCycleStore } from "../../store/cycleStore"
+import { useFinanceStore } from "../../store/financeStore"
 
 // ------------------------------------------------------------------
 // Langgam-It — Expenses Page
@@ -12,8 +12,8 @@ import { useFinanceStore } from "../../store/financeStore";
 // ------------------------------------------------------------------
 
 export default function ExpensesPage() {
-  const { currentCycle, fetchCurrentCycle } = useCycleStore();
-  const { profile } = useFinanceStore();
+  const { currentCycle, fetchCurrentCycle } = useCycleStore()
+  const { profile } = useFinanceStore()
   const {
     todayExpenses,
     dailyLimit,
@@ -21,54 +21,54 @@ export default function ExpensesPage() {
     fetchDailyLimit,
     addExpense,
     isLoading: storeLoading,
-  } = useExpenseStore();
+  } = useExpenseStore()
 
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<"needs" | "wants">("needs");
-  const [description, setDescription] = useState("");
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [amount, setAmount] = useState("")
+  const [category, setCategory] = useState<"needs" | "wants">("needs")
+  const [description, setDescription] = useState("")
+  const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    fetchCurrentCycle();
-    fetchTodayExpenses();
-    fetchDailyLimit();
-  }, [fetchCurrentCycle, fetchTodayExpenses, fetchDailyLimit]);
+    fetchCurrentCycle()
+    fetchTodayExpenses()
+    fetchDailyLimit()
+  }, [fetchCurrentCycle, fetchTodayExpenses, fetchDailyLimit])
 
-  const currency = profile?.currency || "PHP";
+  const currency = profile?.currency || "PHP"
 
   function formatCurrency(val: number | string) {
-    const num = typeof val === "string" ? parseFloat(val) : val;
+    const num = typeof val === "string" ? parseFloat(val) : val
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency,
       minimumFractionDigits: 2,
-    }).format(num);
+    }).format(num)
   }
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value;
-    if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
-    setAmount(value);
-    setError("");
+    const value = e.target.value
+    if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return
+    setAmount(value)
+    setError("")
   }
 
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+    e.preventDefault()
 
-    const amountNum = parseFloat(amount);
+    const amountNum = parseFloat(amount)
     if (!amountNum || amountNum <= 0) {
-      setError("Please enter a valid amount.");
-      return;
+      setError("Please enter a valid amount.")
+      return
     }
 
     if (!description.trim()) {
-      setError("Please add a description.");
-      return;
+      setError("Please add a description.")
+      return
     }
 
-    setIsSubmitting(true);
-    setError("");
+    setIsSubmitting(true)
+    setError("")
 
     addExpense({
       amount: amountNum,
@@ -76,56 +76,60 @@ export default function ExpensesPage() {
       description: description.trim(),
     })
       .then(() => {
-        setAmount("");
-        setDescription("");
-        setCategory("needs");
+        setAmount("")
+        setDescription("")
+        setCategory("needs")
       })
       .catch((err) => {
-        console.error("Failed to add expense:", err);
-        console.error("Error response data:", err.response?.data);
-        console.error("Error status:", err.response?.status);
-        
+        console.error("Failed to add expense:", err)
+        console.error("Error response data:", err.response?.data)
+        console.error("Error status:", err.response?.status)
+
         // Extract error message from backend
-        let errorMsg = "Failed to add expense. ";
+        let errorMsg = "Failed to add expense. "
         if (err.response?.data) {
-          const data = err.response.data;
-          if (typeof data === 'string') {
-            errorMsg += data;
+          const data = err.response.data
+          if (typeof data === "string") {
+            errorMsg += data
           } else if (data.detail) {
-            errorMsg += data.detail;
+            errorMsg += data.detail
           } else if (data.message) {
-            errorMsg += data.message;
+            errorMsg += data.message
           } else if (data.error) {
-            errorMsg += data.error;
+            errorMsg += data.error
           } else {
             // Show all field errors
             const fieldErrors = Object.entries(data)
-              .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-              .join('; ');
-            errorMsg += fieldErrors || "Please check your input.";
+              .map(
+                ([field, msgs]) =>
+                  `${field}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`
+              )
+              .join("; ")
+            errorMsg += fieldErrors || "Please check your input."
           }
         } else {
-          errorMsg += err.message || "Please try again.";
+          errorMsg += err.message || "Please try again."
         }
-        
-        setError(errorMsg);
+
+        setError(errorMsg)
       })
       .finally(() => {
-        setIsSubmitting(false);
-      });
+        setIsSubmitting(false)
+      })
   }
 
   // Calculate today's total and remaining
   const todayTotal = todayExpenses.reduce(
     (sum, exp) => sum + parseFloat(exp.amount),
     0
-  );
+  )
 
-  const dailyLimitAmount = dailyLimit ? parseFloat(dailyLimit.daily_limit) : 0;
-  const remainingToday = dailyLimit 
+  const dailyLimitAmount = dailyLimit ? parseFloat(dailyLimit.daily_limit) : 0
+  const remainingToday = dailyLimit
     ? parseFloat(dailyLimit.remaining_today)
-    : dailyLimitAmount - todayTotal;
-  const usagePercent = dailyLimitAmount > 0 ? (todayTotal / dailyLimitAmount) * 100 : 0;
+    : dailyLimitAmount - todayTotal
+  const usagePercent =
+    dailyLimitAmount > 0 ? (todayTotal / dailyLimitAmount) * 100 : 0
 
   // Show loading state while fetching initial data
   if (storeLoading && !dailyLimit && todayExpenses.length === 0) {
@@ -139,12 +143,12 @@ export default function ExpensesPage() {
           </div>
         </div>
       </>
-    );
+    )
   }
 
   // Show message if no cycle exists AND no cash on hand
-  const cashOnHand = profile ? parseFloat(profile.cash_on_hand) : 0;
-  
+  const cashOnHand = profile ? parseFloat(profile.cash_on_hand) : 0
+
   if (!currentCycle && !storeLoading && cashOnHand === 0) {
     return (
       <>
@@ -152,11 +156,14 @@ export default function ExpensesPage() {
         <div className="exp-root">
           <div className="exp-header">
             <h1 className="exp-title">Expenses</h1>
-            <p className="exp-subtitle">No active cycle and no cash on hand. Add income or cash to start tracking expenses.</p>
+            <p className="exp-subtitle">
+              No active cycle and no cash on hand. Add income or cash to start
+              tracking expenses.
+            </p>
           </div>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -166,7 +173,9 @@ export default function ExpensesPage() {
         <div className="exp-header">
           <div>
             <h1 className="exp-title">Expenses</h1>
-            <p className="exp-subtitle">Track your daily spending and stay within budget</p>
+            <p className="exp-subtitle">
+              Track your daily spending and stay within budget
+            </p>
           </div>
         </div>
 
@@ -175,7 +184,9 @@ export default function ExpensesPage() {
           <div className="exp-daily-header">
             <div>
               <p className="exp-daily-label">Daily Limit</p>
-              <p className="exp-daily-value">{formatCurrency(dailyLimitAmount)}</p>
+              <p className="exp-daily-value">
+                {formatCurrency(dailyLimitAmount)}
+              </p>
               <p className="exp-daily-sub">
                 {dailyLimit?.remaining_days || 0} days remaining in cycle
               </p>
@@ -185,7 +196,8 @@ export default function ExpensesPage() {
               <p
                 className="exp-daily-remaining-value"
                 style={{
-                  color: remainingToday >= 0 ? "var(--success)" : "var(--error)",
+                  color:
+                    remainingToday >= 0 ? "var(--success)" : "var(--error)",
                 }}
               >
                 {formatCurrency(remainingToday)}
@@ -203,13 +215,14 @@ export default function ExpensesPage() {
                     usagePercent > 100
                       ? "var(--error)"
                       : usagePercent > 80
-                      ? "var(--warning)"
-                      : "var(--success)",
+                        ? "var(--warning)"
+                        : "var(--success)",
                 }}
               />
             </div>
             <p className="exp-daily-progress-text">
-              {formatCurrency(todayTotal)} spent today ({usagePercent.toFixed(0)}%)
+              {formatCurrency(todayTotal)} spent today (
+              {usagePercent.toFixed(0)}%)
             </p>
           </div>
         </div>
@@ -228,7 +241,7 @@ export default function ExpensesPage() {
                 <span className="exp-currency">₱</span>
                 <input
                   id="exp-amount"
-                  className={`exp-input${error && !description ? " exp-input-error" : ""}`}
+                  className={`exp-input${error && !description ? "exp-input-error" : ""}`}
                   type="text"
                   inputMode="decimal"
                   placeholder="0.00"
@@ -249,7 +262,9 @@ export default function ExpensesPage() {
                 id="exp-category"
                 className="exp-select"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as "needs" | "wants")}
+                onChange={(e) =>
+                  setCategory(e.target.value as "needs" | "wants")
+                }
                 disabled={isSubmitting}
               >
                 <option value="needs">Needs (Essential)</option>
@@ -265,7 +280,7 @@ export default function ExpensesPage() {
             </label>
             <input
               id="exp-description"
-              className={`exp-input${error && !amount ? " exp-input-error" : ""}`}
+              className={`exp-input${error && !amount ? "exp-input-error" : ""}`}
               type="text"
               placeholder="What did you spend on?"
               value={description}
@@ -277,7 +292,11 @@ export default function ExpensesPage() {
 
           {error && <span className="exp-error-msg">{error}</span>}
 
-          <button type="submit" className="exp-btn-primary" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className="exp-btn-primary"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? <span className="exp-spinner" /> : "Add Expense"}
           </button>
         </form>
@@ -402,7 +421,7 @@ export default function ExpensesPage() {
         </div>
       </div>
     </>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -424,7 +443,7 @@ function NeedsIcon({ color }: { color: string }) {
       <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
-  );
+  )
 }
 
 function WantsIcon({ color }: { color: string }) {
@@ -444,7 +463,7 @@ function WantsIcon({ color }: { color: string }) {
       <line x1="9" y1="9" x2="9.01" y2="9" />
       <line x1="15" y1="9" x2="15.01" y2="9" />
     </svg>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -926,4 +945,4 @@ const EXPENSES_STYLES = `
       max-width: 1200px;
     }
   }
-`;
+`

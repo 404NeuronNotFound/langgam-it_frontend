@@ -28,11 +28,11 @@ export async function login(payload: LoginPayload): Promise<AuthTokens> {
 
 // ── 2. Register ───────────────────────────────────────────────────────
 export async function register(
-  payload: RegisterPayload,
+  payload: RegisterPayload
 ): Promise<{ message: string; user: User }> {
   const { data } = await apiClient.post<{ message: string; user: User }>(
     "/auth/register/",
-    payload,
+    payload
   )
   return data
 }
@@ -45,11 +45,11 @@ export async function getMe(): Promise<User> {
 
 // ── 4. Refresh token (plain axios — bypasses interceptor) ─────────────
 export async function refreshToken(
-  refresh: string,
+  refresh: string
 ): Promise<{ access: string }> {
   const { data } = await axios.post<{ access: string }>(
     `${BASE_URL}/auth/token/refresh/`,
-    { refresh },
+    { refresh }
   )
   return data
 }

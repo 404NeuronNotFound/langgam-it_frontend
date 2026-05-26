@@ -1,28 +1,48 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 
 export interface InvestmentTypeAllocation {
-  type: "stocks" | "crypto" | "real_estate" | "bonds" | "mutual_funds" | "other";
-  label: string;
-  allocated: number;
+  type: "stocks" | "crypto" | "real_estate" | "bonds" | "mutual_funds" | "other"
+  label: string
+  allocated: number
 }
 
 interface InvestmentAllocationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (allocations: InvestmentTypeAllocation[]) => Promise<void>;
-  totalAllocated: number;
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (allocations: InvestmentTypeAllocation[]) => Promise<void>
+  totalAllocated: number
 }
 
 const INVESTMENT_TYPES = [
-  { type: "stocks" as const, label: "Stocks", description: "Individual stocks, ETFs" },
-  { type: "crypto" as const, label: "Cryptocurrency", description: "Bitcoin, Ethereum, etc." },
-  { type: "real_estate" as const, label: "Real Estate", description: "Properties, REITs" },
-  { type: "bonds" as const, label: "Bonds", description: "Government, corporate bonds" },
-  { type: "mutual_funds" as const, label: "Mutual Funds", description: "Managed funds" },
+  {
+    type: "stocks" as const,
+    label: "Stocks",
+    description: "Individual stocks, ETFs",
+  },
+  {
+    type: "crypto" as const,
+    label: "Cryptocurrency",
+    description: "Bitcoin, Ethereum, etc.",
+  },
+  {
+    type: "real_estate" as const,
+    label: "Real Estate",
+    description: "Properties, REITs",
+  },
+  {
+    type: "bonds" as const,
+    label: "Bonds",
+    description: "Government, corporate bonds",
+  },
+  {
+    type: "mutual_funds" as const,
+    label: "Mutual Funds",
+    description: "Managed funds",
+  },
   { type: "other" as const, label: "Other", description: "Other investments" },
-];
+]
 
 export default function InvestmentAllocationModal({
   isOpen,
@@ -30,9 +50,9 @@ export default function InvestmentAllocationModal({
   onSubmit,
   totalAllocated,
 }: InvestmentAllocationModalProps) {
-  const [allocations, setAllocations] = useState<InvestmentTypeAllocation[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [allocations, setAllocations] = useState<InvestmentTypeAllocation[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (isOpen) {
@@ -43,25 +63,30 @@ export default function InvestmentAllocationModal({
           label: t.label,
           allocated: 0,
         }))
-      );
+      )
     }
-  }, [isOpen]);
+  }, [isOpen])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
-  const totalAllocatedByType = allocations.reduce((sum, a) => sum + a.allocated, 0);
-  const remaining = totalAllocated - totalAllocatedByType;
+  const totalAllocatedByType = allocations.reduce(
+    (sum, a) => sum + a.allocated,
+    0
+  )
+  const remaining = totalAllocated - totalAllocatedByType
 
   function handleAllocationChange(type: string, value: number) {
     setAllocations((prev) =>
-      prev.map((a) => (a.type === type ? { ...a, allocated: Math.max(0, value) } : a))
-    );
-    setError("");
+      prev.map((a) =>
+        a.type === type ? { ...a, allocated: Math.max(0, value) } : a
+      )
+    )
+    setError("")
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+    e.preventDefault()
+    setError("")
 
     if (totalAllocatedByType !== totalAllocated) {
       setError(
@@ -72,25 +97,25 @@ export default function InvestmentAllocationModal({
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}`
-      );
-      return;
+      )
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
-      await onSubmit(allocations);
-      onClose();
+      await onSubmit(allocations)
+      onClose()
     } catch (err: any) {
-      setError(err.message || "Failed to save allocations");
+      setError(err.message || "Failed to save allocations")
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
 
   function handleClose() {
     if (!isSubmitting) {
-      setError("");
-      onClose();
+      setError("")
+      onClose()
     }
   }
 
@@ -101,7 +126,11 @@ export default function InvestmentAllocationModal({
         <div className="iam-modal" onClick={(e) => e.stopPropagation()}>
           <div className="iam-header">
             <h2 className="iam-title">Allocate Investment Budget</h2>
-            <button className="iam-close-btn" onClick={handleClose} aria-label="Close">
+            <button
+              className="iam-close-btn"
+              onClick={handleClose}
+              aria-label="Close"
+            >
               ×
             </button>
           </div>
@@ -112,16 +141,31 @@ export default function InvestmentAllocationModal({
               <div className="iam-info-row">
                 <span className="iam-info-label">Total Budget:</span>
                 <span className="iam-info-value">
-                  ₱{totalAllocated.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {totalAllocated.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
               <div className="iam-info-row">
                 <span className="iam-info-label">Allocated:</span>
                 <span className="iam-info-value">
-                  ₱{totalAllocatedByType.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {totalAllocatedByType.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
-              <div className="iam-info-row" style={{ borderTop: "0.5px solid var(--border-md)", paddingTop: "8px", marginTop: "8px" }}>
+              <div
+                className="iam-info-row"
+                style={{
+                  borderTop: "0.5px solid var(--border-md)",
+                  paddingTop: "8px",
+                  marginTop: "8px",
+                }}
+              >
                 <span className="iam-info-label" style={{ fontWeight: 600 }}>
                   Remaining:
                 </span>
@@ -129,10 +173,19 @@ export default function InvestmentAllocationModal({
                   className="iam-info-value"
                   style={{
                     fontWeight: 600,
-                    color: remaining === 0 ? "var(--success)" : remaining > 0 ? "var(--text-2)" : "var(--error)",
+                    color:
+                      remaining === 0
+                        ? "var(--success)"
+                        : remaining > 0
+                          ? "var(--text-2)"
+                          : "var(--error)",
                   }}
                 >
-                  ₱{remaining.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {remaining.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
             </div>
@@ -140,13 +193,20 @@ export default function InvestmentAllocationModal({
             {/* Allocation Fields by Type */}
             <div className="iam-fields">
               {allocations.map((alloc) => {
-                const typeInfo = INVESTMENT_TYPES.find((t) => t.type === alloc.type);
+                const typeInfo = INVESTMENT_TYPES.find(
+                  (t) => t.type === alloc.type
+                )
                 return (
                   <div key={alloc.type} className="iam-field">
-                    <label className="iam-label" htmlFor={`alloc-${alloc.type}`}>
+                    <label
+                      className="iam-label"
+                      htmlFor={`alloc-${alloc.type}`}
+                    >
                       <div className="iam-label-content">
                         <span className="iam-label-name">{alloc.label}</span>
-                        <span className="iam-label-desc">{typeInfo?.description}</span>
+                        <span className="iam-label-desc">
+                          {typeInfo?.description}
+                        </span>
                       </div>
                     </label>
                     <div className="iam-input-wrap">
@@ -159,22 +219,36 @@ export default function InvestmentAllocationModal({
                         className="iam-input"
                         placeholder="0.00"
                         value={alloc.allocated || ""}
-                        onChange={(e) => handleAllocationChange(alloc.type, parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          handleAllocationChange(
+                            alloc.type,
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         disabled={isSubmitting}
                       />
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
 
             {error && <p className="iam-error">{error}</p>}
 
             <div className="iam-footer">
-              <button type="button" className="iam-btn-secondary" onClick={handleClose} disabled={isSubmitting}>
+              <button
+                type="button"
+                className="iam-btn-secondary"
+                onClick={handleClose}
+                disabled={isSubmitting}
+              >
                 Cancel
               </button>
-              <button type="submit" className="iam-btn-primary" disabled={isSubmitting || remaining !== 0}>
+              <button
+                type="submit"
+                className="iam-btn-primary"
+                disabled={isSubmitting || remaining !== 0}
+              >
                 {isSubmitting ? "Saving..." : "Save Allocations"}
               </button>
             </div>
@@ -182,7 +256,7 @@ export default function InvestmentAllocationModal({
         </div>
       </div>
     </>
-  );
+  )
 }
 
 const MODAL_STYLES = `
@@ -460,4 +534,4 @@ const MODAL_STYLES = `
       grid-template-columns: 1fr;
     }
   }
-`;
+`

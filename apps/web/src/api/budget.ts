@@ -10,13 +10,10 @@
 //   POST /api/setup/budget/  → createInitialBudgetSetup
 
 import { apiClient } from "./client"
-import type {
-  MonthlyBudgetSetup,
-  MonthlyBudgetSetupPayload,
-} from "../types"
+import type { MonthlyBudgetSetup, MonthlyBudgetSetupPayload } from "../types"
 
 function buildBudgetPayload(
-  payload: MonthlyBudgetSetupPayload,
+  payload: MonthlyBudgetSetupPayload
 ): MonthlyBudgetSetupPayload {
   return {
     estimated_monthly_income: payload.estimated_monthly_income,
@@ -34,22 +31,22 @@ export async function getBudgetSetups(): Promise<MonthlyBudgetSetup[]> {
 
 // ── 2. Update budget (creates new row, non-destructive) ───────────────
 export async function updateBudgetSetup(
-  payload: MonthlyBudgetSetupPayload,
+  payload: MonthlyBudgetSetupPayload
 ): Promise<MonthlyBudgetSetup> {
   const { data } = await apiClient.post<MonthlyBudgetSetup>(
     "/budget/update/",
-    buildBudgetPayload(payload),
+    buildBudgetPayload(payload)
   )
   return data
 }
 
 // ── 3. Create initial budget setup (setup wizard only) ────────────────
 export async function createInitialBudgetSetup(
-  payload: MonthlyBudgetSetupPayload,
+  payload: MonthlyBudgetSetupPayload
 ): Promise<MonthlyBudgetSetup> {
   const { data } = await apiClient.post<MonthlyBudgetSetup>(
     "/setup/budget/",
-    buildBudgetPayload(payload),
+    buildBudgetPayload(payload)
   )
   return data
 }

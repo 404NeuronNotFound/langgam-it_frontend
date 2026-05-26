@@ -1,7 +1,7 @@
 // Zustand store for monthly cycle and allocation
 
-import { create } from "zustand";
-import type { MonthCycle, AllocationLog, AllocationResult } from "@/types/cycle";
+import { create } from "zustand"
+import type { MonthCycle, AllocationLog, AllocationResult } from "@/types/cycle"
 import {
   getCurrentCycle,
   getAllocationLogs,
@@ -9,24 +9,24 @@ import {
   submitInvestment,
   getAllCycles,
   resetCycleExpenses,
-} from "@/api/cycle";
+} from "@/api/cycle"
 
 interface CycleState {
-  currentCycle: MonthCycle | null;
-  allocationLogs: AllocationLog[];
-  allCycles: MonthCycle[];
-  isLoading: boolean;
-  error: string | null;
-  lastAllocationResult: AllocationResult | null;
+  currentCycle: MonthCycle | null
+  allocationLogs: AllocationLog[]
+  allCycles: MonthCycle[]
+  isLoading: boolean
+  error: string | null
+  lastAllocationResult: AllocationResult | null
 
   // Actions
-  fetchCurrentCycle: () => Promise<void>;
-  fetchAllocationLogs: (cycleId: number) => Promise<void>;
-  fetchAllCycles: () => Promise<void>;
-  addIncome: (amount: number) => Promise<AllocationResult>;
-  moveToInvestments: (amount: number) => Promise<AllocationResult>;
-  resetExpenses: () => Promise<void>;
-  reset: () => void;
+  fetchCurrentCycle: () => Promise<void>
+  fetchAllocationLogs: (cycleId: number) => Promise<void>
+  fetchAllCycles: () => Promise<void>
+  addIncome: (amount: number) => Promise<AllocationResult>
+  moveToInvestments: (amount: number) => Promise<AllocationResult>
+  resetExpenses: () => Promise<void>
+  reset: () => void
 }
 
 export const useCycleStore = create<CycleState>((set) => ({
@@ -38,84 +38,102 @@ export const useCycleStore = create<CycleState>((set) => ({
   lastAllocationResult: null,
 
   fetchCurrentCycle: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null })
     try {
-      const cycle = await getCurrentCycle();
-      set({ currentCycle: cycle, isLoading: false });
+      const cycle = await getCurrentCycle()
+      set({ currentCycle: cycle, isLoading: false })
     } catch (error: any) {
       // 404 is expected when no cycle exists yet - not an error
       if (error.response?.status === 404) {
-        set({ currentCycle: null, isLoading: false });
+        set({ currentCycle: null, isLoading: false })
       } else {
-        set({ error: error.message || "Failed to fetch cycle", isLoading: false });
+        set({
+          error: error.message || "Failed to fetch cycle",
+          isLoading: false,
+        })
       }
     }
   },
 
   fetchAllocationLogs: async (cycleId: number) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null })
     try {
-      const logs = await getAllocationLogs(cycleId);
-      set({ allocationLogs: logs, isLoading: false });
+      const logs = await getAllocationLogs(cycleId)
+      set({ allocationLogs: logs, isLoading: false })
     } catch (error: any) {
-      set({ error: error.message || "Failed to fetch logs", isLoading: false });
+      set({ error: error.message || "Failed to fetch logs", isLoading: false })
     }
   },
 
   fetchAllCycles: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null })
     try {
-      const cycles = await getAllCycles();
-      set({ allCycles: cycles, isLoading: false });
+      const cycles = await getAllCycles()
+      set({ allCycles: cycles, isLoading: false })
     } catch (error: any) {
-      set({ error: error.message || "Failed to fetch cycles", isLoading: false });
+      set({
+        error: error.message || "Failed to fetch cycles",
+        isLoading: false,
+      })
     }
   },
 
   addIncome: async (amount: number) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null })
     try {
-      const result = await submitIncome({ amount });
+      const result = await submitIncome({ amount })
       set({
         currentCycle: result.cycle,
         allocationLogs: result.logs,
         lastAllocationResult: result,
         isLoading: false,
-      });
-      return result;
+      })
+      return result
     } catch (error: any) {
-      set({ error: error.message || "Failed to submit income", isLoading: false });
-      throw error;
+      set({
+        error: error.message || "Failed to submit income",
+        isLoading: false,
+      })
+      throw error
     }
   },
 
   moveToInvestments: async (amount: number) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null })
     try {
-      const result = await submitInvestment({ amount });
+      const result = await submitInvestment({ amount })
       set({
         currentCycle: result.cycle,
-        allocationLogs: [...useCycleStore.getState().allocationLogs, ...result.logs],
+        allocationLogs: [
+          ...useCycleStore.getState().allocationLogs,
+          ...result.logs,
+        ],
         lastAllocationResult: result,
         isLoading: false,
-      });
-      return result;
+      })
+      return result
     } catch (error: any) {
-      set({ error: error.message || "Failed to move to investments", isLoading: false });
-      throw error;
+      set({
+        error: error.message || "Failed to move to investments",
+        isLoading: false,
+      })
+      throw error
     }
   },
 
   resetExpenses: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null })
     try {
-      await resetCycleExpenses();
+      await resetCycleExpenses()
       // Refresh current cycle after reset
-      const cycle = await getCurrentCycle();
-      set({ currentCycle: cycle, isLoading: false });
+      const cycle = await getCurrentCycle()
+      set({ currentCycle: cycle, isLoading: false })
     } catch (error: any) {
-      set({ error: error.message || "Failed to reset expenses", isLoading: false });
-      throw error;
+      set({
+        error: error.message || "Failed to reset expenses",
+        isLoading: false,
+      })
+      throw error
     }
   },
 
@@ -127,6 +145,6 @@ export const useCycleStore = create<CycleState>((set) => ({
       isLoading: false,
       error: null,
       lastAllocationResult: null,
-    });
+    })
   },
-}));
+}))

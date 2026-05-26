@@ -1,35 +1,35 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { useCycleStore } from "../../store/cycleStore";
-import { useExpenseStore } from "../../store/expenseStore";
-import { useFinanceStore } from "../../store/financeStore";
+import { useEffect } from "react"
+import { useCycleStore } from "../../store/cycleStore"
+import { useExpenseStore } from "../../store/expenseStore"
+import { useFinanceStore } from "../../store/financeStore"
 
 export default function BudgetPage() {
-  const { currentCycle, fetchCurrentCycle } = useCycleStore();
-  const { expenses, fetchExpensesByCycle, isLoading } = useExpenseStore();
-  const { profile } = useFinanceStore();
+  const { currentCycle, fetchCurrentCycle } = useCycleStore()
+  const { expenses, fetchExpensesByCycle, isLoading } = useExpenseStore()
+  const { profile } = useFinanceStore()
 
   useEffect(() => {
-    fetchCurrentCycle();
-  }, [fetchCurrentCycle]);
+    fetchCurrentCycle()
+  }, [fetchCurrentCycle])
 
   useEffect(() => {
     // Fetch expenses for current cycle only
     if (currentCycle?.id) {
-      fetchExpensesByCycle(currentCycle.id);
+      fetchExpensesByCycle(currentCycle.id)
     }
-  }, [currentCycle?.id, fetchExpensesByCycle]);
+  }, [currentCycle?.id, fetchExpensesByCycle])
 
-  const currency = profile?.currency || "PHP";
+  const currency = profile?.currency || "PHP"
 
   function formatCurrency(val: number | string) {
-    const num = typeof val === "string" ? parseFloat(val) : val;
+    const num = typeof val === "string" ? parseFloat(val) : val
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency,
       minimumFractionDigits: 2,
-    }).format(num);
+    }).format(num)
   }
 
   if (isLoading && !currentCycle) {
@@ -43,7 +43,7 @@ export default function BudgetPage() {
           </div>
         </div>
       </>
-    );
+    )
   }
 
   if (!currentCycle) {
@@ -53,47 +53,53 @@ export default function BudgetPage() {
         <div className="budget-root">
           <div className="budget-header">
             <h1 className="budget-title">Budget Overview</h1>
-            <p className="budget-subtitle">No active cycle. Add income to start tracking.</p>
+            <p className="budget-subtitle">
+              No active cycle. Add income to start tracking.
+            </p>
           </div>
         </div>
       </>
-    );
+    )
   }
 
-  const expensesBudget = parseFloat(currentCycle.expenses_budget);
-  const wantsBudget = parseFloat(currentCycle.wants_budget);
-  const remainingBudget = parseFloat(currentCycle.remaining_budget);
+  const expensesBudget = parseFloat(currentCycle.expenses_budget)
+  const wantsBudget = parseFloat(currentCycle.wants_budget)
+  const remainingBudget = parseFloat(currentCycle.remaining_budget)
 
   // Expenses are already filtered by cycle from the API
-  const currentCycleExpenses = expenses;
+  const currentCycleExpenses = expenses
 
-  console.log("Budget Page - Current Cycle ID:", currentCycle.id);
-  console.log("Budget Page - Current Cycle Expenses:", currentCycleExpenses);
+  console.log("Budget Page - Current Cycle ID:", currentCycle.id)
+  console.log("Budget Page - Current Cycle Expenses:", currentCycleExpenses)
 
   const needsSpent = currentCycleExpenses
     .filter((e) => e.category === "needs")
     .reduce((sum, e) => {
-      const amount = parseFloat(e.amount);
-      return sum + amount;
-    }, 0);
+      const amount = parseFloat(e.amount)
+      return sum + amount
+    }, 0)
 
   const wantsSpent = currentCycleExpenses
     .filter((e) => e.category === "wants")
     .reduce((sum, e) => {
-      const amount = parseFloat(e.amount);
-      return sum + amount;
-    }, 0);
+      const amount = parseFloat(e.amount)
+      return sum + amount
+    }, 0)
 
-  const needsRemaining = expensesBudget - needsSpent;
-  const wantsRemaining = wantsBudget - wantsSpent;
+  const needsRemaining = expensesBudget - needsSpent
+  const wantsRemaining = wantsBudget - wantsSpent
 
-  const needsPercentage = expensesBudget > 0 ? (needsSpent / expensesBudget) * 100 : 0;
-  const wantsPercentage = wantsBudget > 0 ? (wantsSpent / wantsBudget) * 100 : 0;
+  const needsPercentage =
+    expensesBudget > 0 ? (needsSpent / expensesBudget) * 100 : 0
+  const wantsPercentage = wantsBudget > 0 ? (wantsSpent / wantsBudget) * 100 : 0
 
-  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString(
+    "en-US",
+    {
+      month: "long",
+      year: "numeric",
+    }
+  )
 
   return (
     <>
@@ -102,14 +108,19 @@ export default function BudgetPage() {
         <div className="budget-header">
           <div>
             <h1 className="budget-title">Budget Overview</h1>
-            <p className="budget-subtitle">Track your spending for {monthYear}</p>
+            <p className="budget-subtitle">
+              Track your spending for {monthYear}
+            </p>
           </div>
         </div>
 
         <div className="budget-cards-grid">
           <div className="budget-card">
             <div className="budget-card-header">
-              <div className="budget-card-icon" style={{ background: "var(--error-bg)" }}>
+              <div
+                className="budget-card-icon"
+                style={{ background: "var(--error-bg)" }}
+              >
                 <NeedsIcon color="var(--error)" />
               </div>
               <span className="budget-card-label">Needs Budget</span>
@@ -117,17 +128,24 @@ export default function BudgetPage() {
             <div className="budget-card-body">
               <div className="budget-stat">
                 <span className="budget-stat-label">Allocated</span>
-                <span className="budget-stat-value">{formatCurrency(expensesBudget)}</span>
+                <span className="budget-stat-value">
+                  {formatCurrency(expensesBudget)}
+                </span>
               </div>
               <div className="budget-stat">
                 <span className="budget-stat-label">Spent</span>
-                <span className="budget-stat-value budget-stat-spent">{formatCurrency(needsSpent)}</span>
+                <span className="budget-stat-value budget-stat-spent">
+                  {formatCurrency(needsSpent)}
+                </span>
               </div>
               <div className="budget-stat">
                 <span className="budget-stat-label">Remaining</span>
                 <span
                   className="budget-stat-value"
-                  style={{ color: needsRemaining < 0 ? "var(--error)" : "var(--success)" }}
+                  style={{
+                    color:
+                      needsRemaining < 0 ? "var(--error)" : "var(--success)",
+                  }}
                 >
                   {formatCurrency(needsRemaining)}
                 </span>
@@ -136,14 +154,17 @@ export default function BudgetPage() {
             <div className="budget-progress">
               <div className="budget-progress-header">
                 <span className="budget-progress-label">Usage</span>
-                <span className="budget-progress-percent">{needsPercentage.toFixed(1)}%</span>
+                <span className="budget-progress-percent">
+                  {needsPercentage.toFixed(1)}%
+                </span>
               </div>
               <div className="budget-progress-bar">
                 <div
                   className="budget-progress-fill"
                   style={{
                     width: `${Math.min(needsPercentage, 100)}%`,
-                    background: needsPercentage > 100 ? "var(--error)" : "var(--error)",
+                    background:
+                      needsPercentage > 100 ? "var(--error)" : "var(--error)",
                   }}
                 />
               </div>
@@ -152,7 +173,10 @@ export default function BudgetPage() {
 
           <div className="budget-card">
             <div className="budget-card-header">
-              <div className="budget-card-icon" style={{ background: "var(--purple-bg)" }}>
+              <div
+                className="budget-card-icon"
+                style={{ background: "var(--purple-bg)" }}
+              >
                 <WantsIcon color="var(--purple-icon)" />
               </div>
               <span className="budget-card-label">Wants Budget</span>
@@ -160,17 +184,24 @@ export default function BudgetPage() {
             <div className="budget-card-body">
               <div className="budget-stat">
                 <span className="budget-stat-label">Allocated</span>
-                <span className="budget-stat-value">{formatCurrency(wantsBudget)}</span>
+                <span className="budget-stat-value">
+                  {formatCurrency(wantsBudget)}
+                </span>
               </div>
               <div className="budget-stat">
                 <span className="budget-stat-label">Spent</span>
-                <span className="budget-stat-value budget-stat-spent">{formatCurrency(wantsSpent)}</span>
+                <span className="budget-stat-value budget-stat-spent">
+                  {formatCurrency(wantsSpent)}
+                </span>
               </div>
               <div className="budget-stat">
                 <span className="budget-stat-label">Remaining</span>
                 <span
                   className="budget-stat-value"
-                  style={{ color: wantsRemaining < 0 ? "var(--error)" : "var(--success)" }}
+                  style={{
+                    color:
+                      wantsRemaining < 0 ? "var(--error)" : "var(--success)",
+                  }}
                 >
                   {formatCurrency(wantsRemaining)}
                 </span>
@@ -179,14 +210,19 @@ export default function BudgetPage() {
             <div className="budget-progress">
               <div className="budget-progress-header">
                 <span className="budget-progress-label">Usage</span>
-                <span className="budget-progress-percent">{wantsPercentage.toFixed(1)}%</span>
+                <span className="budget-progress-percent">
+                  {wantsPercentage.toFixed(1)}%
+                </span>
               </div>
               <div className="budget-progress-bar">
                 <div
                   className="budget-progress-fill"
                   style={{
                     width: `${Math.min(wantsPercentage, 100)}%`,
-                    background: wantsPercentage > 100 ? "var(--error)" : "var(--purple-icon)",
+                    background:
+                      wantsPercentage > 100
+                        ? "var(--error)"
+                        : "var(--purple-icon)",
                   }}
                 />
               </div>
@@ -197,8 +233,12 @@ export default function BudgetPage() {
         <div className="budget-remaining-card">
           <div>
             <p className="budget-remaining-label">Total Remaining Budget</p>
-            <p className="budget-remaining-value">{formatCurrency(remainingBudget)}</p>
-            <p className="budget-remaining-sub">Available for spending this month</p>
+            <p className="budget-remaining-value">
+              {formatCurrency(remainingBudget)}
+            </p>
+            <p className="budget-remaining-sub">
+              Available for spending this month
+            </p>
           </div>
         </div>
 
@@ -232,7 +272,10 @@ export default function BudgetPage() {
                     <div
                       className="budget-expense-icon"
                       style={{
-                        background: expense.category === "needs" ? "var(--error-bg)" : "var(--purple-bg)",
+                        background:
+                          expense.category === "needs"
+                            ? "var(--error-bg)"
+                            : "var(--purple-bg)",
                       }}
                     >
                       {expense.category === "needs" ? (
@@ -242,12 +285,17 @@ export default function BudgetPage() {
                       )}
                     </div>
                     <div>
-                      <p className="budget-expense-desc">{expense.description || "No description"}</p>
+                      <p className="budget-expense-desc">
+                        {expense.description || "No description"}
+                      </p>
                       <div className="budget-expense-meta">
                         <span
                           className="budget-expense-category"
                           style={{
-                            color: expense.category === "needs" ? "var(--error)" : "var(--purple-icon)",
+                            color:
+                              expense.category === "needs"
+                                ? "var(--error)"
+                                : "var(--purple-icon)",
                           }}
                         >
                           {expense.category === "needs" ? "Needs" : "Wants"}
@@ -261,7 +309,9 @@ export default function BudgetPage() {
                       </div>
                     </div>
                   </div>
-                  <span className="budget-expense-amount">{formatCurrency(expense.amount)}</span>
+                  <span className="budget-expense-amount">
+                    {formatCurrency(expense.amount)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -269,27 +319,45 @@ export default function BudgetPage() {
         </div>
       </div>
     </>
-  );
+  )
 }
 
 function NeedsIcon({ color }: { color: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
-  );
+  )
 }
 
 function WantsIcon({ color }: { color: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="10" />
       <path d="M8 14s1.5 2 4 2 4-2 4-2" />
       <line x1="9" y1="9" x2="9.01" y2="9" />
       <line x1="15" y1="9" x2="15.01" y2="9" />
     </svg>
-  );
+  )
 }
 
 const BUDGET_STYLES = `
@@ -599,4 +667,4 @@ const BUDGET_STYLES = `
       font-size: 36px;
     }
   }
-`;
+`

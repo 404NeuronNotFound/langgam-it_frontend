@@ -2,71 +2,71 @@
 
 // ── User ──────────────────────────────────────────────────────────
 export interface User {
-  id: number;
-  username: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  date_joined?: string;
+  id: number
+  username: string
+  first_name: string
+  last_name: string
+  email: string
+  date_joined?: string
 }
 
 // ── Auth state (used in Zustand store) ───────────────────────────
 export interface AuthState {
-  user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
+  user: User | null
+  accessToken: string | null
+  refreshToken: string | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error: string | null
 }
 
 // ── Request payloads ─────────────────────────────────────────────
 export interface LoginPayload {
-  username: string;
-  password: string;
+  username: string
+  password: string
 }
 
 export interface RegisterPayload {
-  username: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-  confirm_password: string;
+  username: string
+  first_name: string
+  last_name: string
+  email: string
+  password: string
+  confirm_password: string
 }
 
 // ── API responses ────────────────────────────────────────────────
 export interface TokenResponse {
-  access: string;
-  refresh: string;
-  user: User;
+  access: string
+  refresh: string
+  user: User
 }
 
 export interface RegisterResponse {
-  message: string;
-  user: User;
+  message: string
+  user: User
 }
 
 export interface RefreshResponse {
-  access: string;
+  access: string
 }
 
 // ── API error shape from Django REST Framework ───────────────────
 export interface APIError {
-  detail?: string;
-  [field: string]: string | string[] | undefined;
+  detail?: string
+  [field: string]: string | string[] | undefined
 }
 
 // ── Profile update payload ────────────────────────────────────────
 export interface UpdateProfilePayload {
-  first_name?: string;
-  last_name?: string;
-  email?: string;
+  first_name?: string
+  last_name?: string
+  email?: string
 }
 
 // ── Password change payload ───────────────────────────────────────
 export interface ChangePasswordPayload {
-  old_password: string;
-  new_password: string;
-  confirm_password: string;
+  old_password: string
+  new_password: string
+  confirm_password: string
 }

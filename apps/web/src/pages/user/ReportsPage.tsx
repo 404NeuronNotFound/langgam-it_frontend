@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useReportStore } from "../../store/reportStore";
+import { useEffect, useState } from "react"
+import { useReportStore } from "../../store/reportStore"
 import {
   BarChart,
   Bar,
@@ -13,15 +13,15 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-} from "recharts";
+} from "recharts"
 
 export default function ReportsPage() {
-  const { reportData, fetchReports, isLoading, error } = useReportStore();
-  const [timeRange, setTimeRange] = useState<"1m" | "6m" | "1y" | "all">("1m");
+  const { reportData, fetchReports, isLoading, error } = useReportStore()
+  const [timeRange, setTimeRange] = useState<"1m" | "6m" | "1y" | "all">("1m")
 
   useEffect(() => {
-    fetchReports(timeRange);
-  }, [timeRange, fetchReports]);
+    fetchReports(timeRange)
+  }, [timeRange, fetchReports])
 
   function formatCurrency(val: number) {
     return new Intl.NumberFormat("en-PH", {
@@ -29,7 +29,7 @@ export default function ReportsPage() {
       currency: "PHP",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(val);
+    }).format(val)
   }
 
   if (error) {
@@ -58,7 +58,7 @@ export default function ReportsPage() {
           </button>
         </div>
       </>
-    );
+    )
   }
 
   if (isLoading || !reportData) {
@@ -68,27 +68,32 @@ export default function ReportsPage() {
         <div className="rep-root">
           <div className="rep-header">
             <h1 className="rep-title">Reports</h1>
-            <p className="rep-subtitle">{isLoading ? "Loading..." : "No data available"}</p>
+            <p className="rep-subtitle">
+              {isLoading ? "Loading..." : "No data available"}
+            </p>
           </div>
         </div>
       </>
-    );
+    )
   }
 
   // Calculate summary stats with fallbacks
-  const summary = reportData?.summary || {};
-  const totalIncome = parseFloat(summary?.total_income || "0");
-  const totalExpenses = parseFloat(summary?.total_expenses || "0");
-  const totalSavings = parseFloat(summary?.total_savings || "0");
-  const savingsRate = parseFloat(summary?.savings_rate || "0");
+  const summary = reportData?.summary || {}
+  const totalIncome = parseFloat(summary?.total_income || "0")
+  const totalExpenses = parseFloat(summary?.total_expenses || "0")
+  const totalSavings = parseFloat(summary?.total_savings || "0")
+  const savingsRate = parseFloat(summary?.savings_rate || "0")
 
   // Use data with fallbacks
-  const incomeVsExpenses = reportData?.income_vs_expenses || [];
-  const savingsTrend = reportData?.savings_trend || [];
-  const netWorthHistory = reportData?.net_worth_history || [];
+  const incomeVsExpenses = reportData?.income_vs_expenses || []
+  const savingsTrend = reportData?.savings_trend || []
+  const netWorthHistory = reportData?.net_worth_history || []
 
   // Show message if no data
-  const hasData = incomeVsExpenses.length > 0 || savingsTrend.length > 0 || netWorthHistory.length > 0;
+  const hasData =
+    incomeVsExpenses.length > 0 ||
+    savingsTrend.length > 0 ||
+    netWorthHistory.length > 0
 
   return (
     <>
@@ -97,7 +102,9 @@ export default function ReportsPage() {
         <div className="rep-header">
           <div>
             <h1 className="rep-title">Reports</h1>
-            <p className="rep-subtitle">Analyze your financial trends and performance</p>
+            <p className="rep-subtitle">
+              Analyze your financial trends and performance
+            </p>
           </div>
           <div className="rep-time-selector">
             <button
@@ -131,7 +138,10 @@ export default function ReportsPage() {
         <div className="rep-summary-grid">
           <div className="rep-summary-card">
             <p className="rep-summary-label">Total Income</p>
-            <p className="rep-summary-value" style={{ color: "var(--success)" }}>
+            <p
+              className="rep-summary-value"
+              style={{ color: "var(--success)" }}
+            >
               {formatCurrency(totalIncome)}
             </p>
           </div>
@@ -143,27 +153,37 @@ export default function ReportsPage() {
           </div>
           <div className="rep-summary-card">
             <p className="rep-summary-label">Total Savings</p>
-            <p className="rep-summary-value" style={{ color: "var(--blue-icon)" }}>
+            <p
+              className="rep-summary-value"
+              style={{ color: "var(--blue-icon)" }}
+            >
               {formatCurrency(totalSavings)}
             </p>
           </div>
           <div className="rep-summary-card">
             <p className="rep-summary-label">Savings Rate</p>
-            <p className="rep-summary-value" style={{ color: "var(--purple-icon)" }}>
+            <p
+              className="rep-summary-value"
+              style={{ color: "var(--purple-icon)" }}
+            >
               {savingsRate.toFixed(1)}%
             </p>
           </div>
         </div>
 
         {!hasData && (
-          <div style={{
-            background: "var(--bg-card)",
-            border: "0.5px solid var(--border-md)",
-            borderRadius: "var(--radius-md)",
-            padding: "3rem 2rem",
-            textAlign: "center",
-          }}>
-            <p style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 8 }}>
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "0.5px solid var(--border-md)",
+              borderRadius: "var(--radius-md)",
+              padding: "3rem 2rem",
+              textAlign: "center",
+            }}
+          >
+            <p
+              style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 8 }}
+            >
               No financial data available yet
             </p>
             <p style={{ fontSize: 12, color: "var(--text-3)" }}>
@@ -175,123 +195,149 @@ export default function ReportsPage() {
         {/* Income vs Expenses Chart */}
         {incomeVsExpenses.length > 0 && (
           <div className="rep-chart-card">
-          <div className="rep-chart-header">
-            <div>
-              <p className="rep-chart-title">Income vs Expenses</p>
-              <p className="rep-chart-sub">Monthly comparison of income and spending</p>
+            <div className="rep-chart-header">
+              <div>
+                <p className="rep-chart-title">Income vs Expenses</p>
+                <p className="rep-chart-sub">
+                  Monthly comparison of income and spending
+                </p>
+              </div>
+            </div>
+            <div className="rep-chart-body">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={incomeVsExpenses}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis
+                    dataKey="month"
+                    stroke="var(--text-3)"
+                    style={{ fontSize: 12 }}
+                  />
+                  <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--bg-card)",
+                      border: "0.5px solid var(--border-md)",
+                      borderRadius: "8px",
+                      fontSize: 12,
+                    }}
+                    formatter={(value: any) => formatCurrency(Number(value))}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar
+                    dataKey="income"
+                    fill="#3B6D11"
+                    name="Income"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="expenses"
+                    fill="#993C1D"
+                    name="Expenses"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div className="rep-chart-body">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={incomeVsExpenses}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="month" stroke="var(--text-3)" style={{ fontSize: 12 }} />
-                <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--bg-card)",
-                    border: "0.5px solid var(--border-md)",
-                    borderRadius: "8px",
-                    fontSize: 12,
-                  }}
-                  formatter={(value: any) => formatCurrency(Number(value))}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="income" fill="#3B6D11" name="Income" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" fill="#993C1D" name="Expenses" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
         )}
 
         {/* Savings Trend Chart */}
         {savingsTrend.length > 0 && (
           <div className="rep-chart-card">
-          <div className="rep-chart-header">
-            <div>
-              <p className="rep-chart-title">Savings Trend</p>
-              <p className="rep-chart-sub">Monthly and cumulative savings over time</p>
+            <div className="rep-chart-header">
+              <div>
+                <p className="rep-chart-title">Savings Trend</p>
+                <p className="rep-chart-sub">
+                  Monthly and cumulative savings over time
+                </p>
+              </div>
+            </div>
+            <div className="rep-chart-body">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={savingsTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis
+                    dataKey="month"
+                    stroke="var(--text-3)"
+                    style={{ fontSize: 12 }}
+                  />
+                  <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--bg-card)",
+                      border: "0.5px solid var(--border-md)",
+                      borderRadius: "8px",
+                      fontSize: 12,
+                    }}
+                    formatter={(value: any) => formatCurrency(Number(value))}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="savings"
+                    stroke="#185FA5"
+                    strokeWidth={2}
+                    name="Monthly Savings"
+                    dot={{ fill: "#185FA5", r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cumulative"
+                    stroke="#534AB7"
+                    strokeWidth={2}
+                    name="Cumulative"
+                    dot={{ fill: "#534AB7", r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div className="rep-chart-body">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={savingsTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="month" stroke="var(--text-3)" style={{ fontSize: 12 }} />
-                <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--bg-card)",
-                    border: "0.5px solid var(--border-md)",
-                    borderRadius: "8px",
-                    fontSize: 12,
-                  }}
-                  formatter={(value: any) => formatCurrency(Number(value))}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line
-                  type="monotone"
-                  dataKey="savings"
-                  stroke="#185FA5"
-                  strokeWidth={2}
-                  name="Monthly Savings"
-                  dot={{ fill: "#185FA5", r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="cumulative"
-                  stroke="#534AB7"
-                  strokeWidth={2}
-                  name="Cumulative"
-                  dot={{ fill: "#534AB7", r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
         )}
 
         {/* Net Worth Chart */}
         {netWorthHistory.length > 0 && (
           <div className="rep-chart-card">
-          <div className="rep-chart-header">
-            <div>
-              <p className="rep-chart-title">Net Worth Over Time</p>
-              <p className="rep-chart-sub">Track your total wealth growth</p>
+            <div className="rep-chart-header">
+              <div>
+                <p className="rep-chart-title">Net Worth Over Time</p>
+                <p className="rep-chart-sub">Track your total wealth growth</p>
+              </div>
+            </div>
+            <div className="rep-chart-body">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={netWorthHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis
+                    dataKey="month"
+                    stroke="var(--text-3)"
+                    style={{ fontSize: 12 }}
+                  />
+                  <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--bg-card)",
+                      border: "0.5px solid var(--border-md)",
+                      borderRadius: "8px",
+                      fontSize: 12,
+                    }}
+                    formatter={(value: any) => formatCurrency(Number(value))}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="net_worth"
+                    stroke="#3B6D11"
+                    strokeWidth={3}
+                    name="Net Worth"
+                    dot={{ fill: "#3B6D11", r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div className="rep-chart-body">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={netWorthHistory}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="month" stroke="var(--text-3)" style={{ fontSize: 12 }} />
-                <YAxis stroke="var(--text-3)" style={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--bg-card)",
-                    border: "0.5px solid var(--border-md)",
-                    borderRadius: "8px",
-                    fontSize: 12,
-                  }}
-                  formatter={(value: any) => formatCurrency(Number(value))}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="net_worth"
-                  stroke="#3B6D11"
-                  strokeWidth={3}
-                  name="Net Worth"
-                  dot={{ fill: "#3B6D11", r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
         )}
       </div>
     </>
-  );
+  )
 }
 
 const REPORTS_STYLES = `
@@ -474,4 +520,4 @@ const REPORTS_STYLES = `
       font-size: 28px;
     }
   }
-`;
+`

@@ -1,19 +1,19 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { usePriceData } from "@/hooks/usePriceData";
-import type { InvestmentCreate } from "@/types/investment";
+import { useState } from "react"
+import { usePriceData } from "@/hooks/usePriceData"
+import type { InvestmentCreate } from "@/types/investment"
 
 interface AddInvestmentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: InvestmentCreate) => Promise<void>;
-  availableInvestmentPool?: number;
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (data: InvestmentCreate) => Promise<void>
+  availableInvestmentPool?: number
 }
 
-export default function AddInvestmentModal({ 
-  isOpen, 
-  onClose, 
+export default function AddInvestmentModal({
+  isOpen,
+  onClose,
   onSubmit,
   availableInvestmentPool = 0,
 }: AddInvestmentModalProps) {
@@ -22,89 +22,91 @@ export default function AddInvestmentModal({
     type: "stocks",
     total_invested: 0,
     current_value: 0,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const { price, isLoading: isPriceLoading, fetchPrice } = usePriceData();
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const { price, isLoading: isPriceLoading, fetchPrice } = usePriceData()
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   async function handleFetchPrice() {
     if (!formData.name.trim()) {
-      setError("Please enter investment symbol first");
-      return;
+      setError("Please enter investment symbol first")
+      return
     }
-    await fetchPrice(formData.name, formData.type);
+    await fetchPrice(formData.name, formData.type)
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!formData.name.trim()) {
-      setError("Please enter investment symbol");
-      return;
+      setError("Please enter investment symbol")
+      return
     }
     if (formData.total_invested <= 0) {
-      setError("Please enter a valid invested amount");
-      return;
-    }
-    
-    // For crypto, price fetch is required
-    if (formData.type === "crypto" && !price) {
-      setError("Please fetch the current price for crypto");
-      return;
+      setError("Please enter a valid invested amount")
+      return
     }
 
-    setIsSubmitting(true);
-    setError("");
-    
+    // For crypto, price fetch is required
+    if (formData.type === "crypto" && !price) {
+      setError("Please fetch the current price for crypto")
+      return
+    }
+
+    setIsSubmitting(true)
+    setError("")
+
     try {
       // For crypto with price: use fetched price
       // For stocks or crypto without price: use invested amount as current value
-      const currentValue = price ? formData.total_invested : formData.total_invested;
-      
+      const currentValue = price
+        ? formData.total_invested
+        : formData.total_invested
+
       await onSubmit({
         ...formData,
         current_value: currentValue,
-      });
-      
+      })
+
       // Reset form
       setFormData({
         name: "",
         type: "stocks",
         total_invested: 0,
         current_value: 0,
-      });
-      onClose();
+      })
+      onClose()
     } catch (err: any) {
       // Extract error message from backend response
-      let errorMsg = "Failed to add investment";
-      
+      let errorMsg = "Failed to add investment"
+
       if (err.response?.data) {
-        const data = err.response.data;
+        const data = err.response.data
         // Handle different error formats
         if (typeof data === "string") {
-          errorMsg = data;
+          errorMsg = data
         } else if (data.detail) {
-          errorMsg = data.detail;
+          errorMsg = data.detail
         } else if (data.error) {
-          errorMsg = data.error;
+          errorMsg = data.error
         } else if (typeof data === "object") {
           // Handle field-specific errors
-          const firstError = Object.values(data)[0];
+          const firstError = Object.values(data)[0]
           if (Array.isArray(firstError)) {
-            errorMsg = firstError[0];
+            errorMsg = firstError[0]
           } else if (typeof firstError === "string") {
-            errorMsg = firstError;
+            errorMsg = firstError
           }
         }
       } else if (err.message) {
-        errorMsg = err.message;
+        errorMsg = err.message
       }
-      
-      setError(errorMsg);
+
+      setError(errorMsg)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
 
@@ -115,9 +117,9 @@ export default function AddInvestmentModal({
         type: "stocks",
         total_invested: 0,
         current_value: 0,
-      });
-      setError("");
-      onClose();
+      })
+      setError("")
+      onClose()
     }
   }
 
@@ -128,7 +130,9 @@ export default function AddInvestmentModal({
         <div className="aim-modal" onClick={(e) => e.stopPropagation()}>
           <div className="aim-header">
             <h2 className="aim-title">Add Investment</h2>
-            <button className="aim-close-btn" onClick={handleClose}>×</button>
+            <button className="aim-close-btn" onClick={handleClose}>
+              ×
+            </button>
           </div>
 
           <form className="aim-body" onSubmit={handleSubmit}>
@@ -136,14 +140,23 @@ export default function AddInvestmentModal({
               <div className="aim-pool-info">
                 <p className="aim-pool-label">Available Investment Pool</p>
                 <p className="aim-pool-value">
-                  ₱{availableInvestmentPool.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {availableInvestmentPool.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
-                <p className="aim-pool-sub">Transferred from savings. Use this to invest in stocks or crypto.</p>
+                <p className="aim-pool-sub">
+                  Transferred from savings. Use this to invest in stocks or
+                  crypto.
+                </p>
               </div>
             )}
 
             <div className="aim-field">
-              <label className="aim-label" htmlFor="name">Investment Symbol</label>
+              <label className="aim-label" htmlFor="name">
+                Investment Symbol
+              </label>
               <div className="aim-input-group">
                 <input
                   id="name"
@@ -152,8 +165,8 @@ export default function AddInvestmentModal({
                   placeholder="e.g., BTC, ETH, AAPL"
                   value={formData.name}
                   onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value });
-                    setError("");
+                    setFormData({ ...formData, name: e.target.value })
+                    setError("")
                   }}
                   disabled={isSubmitting || isPriceLoading}
                 />
@@ -169,23 +182,41 @@ export default function AddInvestmentModal({
                 )}
               </div>
               {formData.type === "stocks" && (
-                <p className="aim-hint">Enter stock symbol (e.g., AAPL, MSFT). Price fetch requires manual entry.</p>
+                <p className="aim-hint">
+                  Enter stock symbol (e.g., AAPL, MSFT). Price fetch requires
+                  manual entry.
+                </p>
               )}
             </div>
 
             {price && (
               <div className="aim-price-info">
                 <div className="aim-price-row">
-                  <span className="aim-price-label">{price.name} Current Price:</span>
+                  <span className="aim-price-label">
+                    {price.name} Current Price:
+                  </span>
                   <span className="aim-price-value">
-                    ₱{price.currentPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱
+                    {price.currentPrice.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
                 {price.changePercent24h !== undefined && (
                   <div className="aim-price-row">
                     <span className="aim-price-label">24h Change:</span>
-                    <span className="aim-price-value" style={{ color: price.changePercent24h >= 0 ? "var(--success)" : "var(--error)" }}>
-                      {price.changePercent24h >= 0 ? "+" : ""}{price.changePercent24h.toFixed(2)}%
+                    <span
+                      className="aim-price-value"
+                      style={{
+                        color:
+                          price.changePercent24h >= 0
+                            ? "var(--success)"
+                            : "var(--error)",
+                      }}
+                    >
+                      {price.changePercent24h >= 0 ? "+" : ""}
+                      {price.changePercent24h.toFixed(2)}%
                     </span>
                   </div>
                 )}
@@ -193,12 +224,16 @@ export default function AddInvestmentModal({
             )}
 
             <div className="aim-field">
-              <label className="aim-label" htmlFor="type">Type</label>
+              <label className="aim-label" htmlFor="type">
+                Type
+              </label>
               <select
                 id="type"
                 className="aim-select"
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value as any })
+                }
                 disabled={isSubmitting}
               >
                 <option value="stocks">Stocks</option>
@@ -207,7 +242,9 @@ export default function AddInvestmentModal({
             </div>
 
             <div className="aim-field">
-              <label className="aim-label" htmlFor="invested">Amount Invested (₱)</label>
+              <label className="aim-label" htmlFor="invested">
+                Amount Invested (₱)
+              </label>
               <input
                 id="invested"
                 type="number"
@@ -215,24 +252,44 @@ export default function AddInvestmentModal({
                 className="aim-input"
                 placeholder="0.00"
                 value={formData.total_invested || ""}
-                onChange={(e) => setFormData({ ...formData, total_invested: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    total_invested: parseFloat(e.target.value) || 0,
+                  })
+                }
                 disabled={isSubmitting}
               />
-              <p className="aim-hint">Enter how much you invested in Philippine Peso</p>
+              <p className="aim-hint">
+                Enter how much you invested in Philippine Peso
+              </p>
             </div>
 
             {price && (
               <div className="aim-current-value">
-                <p className="aim-current-label">Current Value (Auto-calculated)</p>
+                <p className="aim-current-label">
+                  Current Value (Auto-calculated)
+                </p>
                 <div className="aim-current-display">
-                  <p className="aim-current-price">₱{price.currentPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="aim-current-sub">per {formData.name.toUpperCase()}</p>
+                  <p className="aim-current-price">
+                    ₱
+                    {price.currentPrice.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                  <p className="aim-current-sub">
+                    per {formData.name.toUpperCase()}
+                  </p>
                 </div>
                 {formData.total_invested > 0 && (
                   <div className="aim-calculation">
                     <p className="aim-calc-label">Your Holdings:</p>
                     <p className="aim-calc-value">
-                      {(formData.total_invested / price.currentPrice).toFixed(8)} {formData.name.toUpperCase()}
+                      {(formData.total_invested / price.currentPrice).toFixed(
+                        8
+                      )}{" "}
+                      {formData.name.toUpperCase()}
                     </p>
                   </div>
                 )}
@@ -244,7 +301,8 @@ export default function AddInvestmentModal({
                 <p className="aim-error">{error}</p>
                 {error.includes("exceeds available investment budget") && (
                   <p className="aim-error-hint">
-                    💡 Tip: Click "Transfer from Savings" to add more funds to your investment budget.
+                    💡 Tip: Click "Transfer from Savings" to add more funds to
+                    your investment budget.
                   </p>
                 )}
               </div>
@@ -271,7 +329,7 @@ export default function AddInvestmentModal({
         </div>
       </div>
     </>
-  );
+  )
 }
 
 const MODAL_STYLES = `
@@ -628,4 +686,4 @@ const MODAL_STYLES = `
     opacity: 0.5;
     cursor: not-allowed;
   }
-`;
+`

@@ -1,8 +1,8 @@
 // Zustand store for alerts
 
 import { create } from "zustand"
-import type { Alert } from "@/types/expense"
-import { getAlerts, markAlertAsRead } from "@/api/alert"
+import type { Alert } from "@/types"
+import { getAlerts, markAlertRead } from "@/api/alerts"
 
 interface AlertState {
   alerts: Alert[]
@@ -39,7 +39,7 @@ export const useAlertStore = create<AlertState>((set) => ({
 
   markAsRead: async (alertId: number) => {
     try {
-      const updatedAlert = await markAlertAsRead(alertId)
+      const updatedAlert = await markAlertRead(alertId)
       set((state) => ({
         alerts: state.alerts.map((alert) =>
           alert.id === alertId ? updatedAlert : alert

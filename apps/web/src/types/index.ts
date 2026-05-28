@@ -178,6 +178,7 @@ type ExpenseCategory = "needs" | "wants"
 
 interface Expense {
   id: number
+  cycle: number
   amount: string
   category: ExpenseCategory
   description: string
@@ -197,6 +198,7 @@ interface DailyLimit {
   remaining_budget: string
   remaining_days: number
   today_spent: string
+  remaining_today?: string
 }
 
 // ── Alert ─────────────────────────────────────────────────────────────

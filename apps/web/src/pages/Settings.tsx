@@ -5,7 +5,16 @@ import { useAuthStore } from "../store/authStore"
 import type { UpdateProfilePayload, ChangePasswordPayload } from "../types/auth"
 
 export default function SettingsPage() {
-  const { user, isLoading, updateProfile, changePassword } = useAuthStore()
+  const { user, isLoading } = useAuthStore()
+
+  // Stubs since profile update and password change endpoints were removed in backend UPDATE 2.0
+  const updateProfile = async (_payload: UpdateProfilePayload) => {
+    throw new Error("Profile updates are currently disabled.")
+  }
+
+  const changePassword = async (_payload: ChangePasswordPayload) => {
+    throw new Error("Password changes are currently disabled.")
+  }
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({

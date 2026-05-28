@@ -126,7 +126,7 @@ export default function ExpensesPage() {
 
   const dailyLimitAmount = dailyLimit ? parseFloat(dailyLimit.daily_limit) : 0
   const remainingToday = dailyLimit
-    ? parseFloat(dailyLimit.remaining_today)
+    ? parseFloat(dailyLimit.remaining_today || "0")
     : dailyLimitAmount - todayTotal
   const usagePercent =
     dailyLimitAmount > 0 ? (todayTotal / dailyLimitAmount) * 100 : 0

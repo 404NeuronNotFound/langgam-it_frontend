@@ -1,14 +1,12 @@
 // Zustand store for expenses and daily limit
 
 import { create } from "zustand"
-import type { Expense, ExpenseCreate, DailyLimit } from "@/types/expense"
+import type { Expense, ExpenseCreatePayload, DailyLimit } from "@/types"
 import {
   createExpense,
   getExpenses,
-  getExpensesByCycle,
-  getTodayExpenses,
   getDailyLimit,
-} from "@/api/expense"
+} from "@/api/expenses"
 
 interface ExpenseState {
   expenses: Expense[]
@@ -22,7 +20,7 @@ interface ExpenseState {
   fetchExpensesByCycle: (cycleId: number) => Promise<void>
   fetchTodayExpenses: () => Promise<void>
   fetchDailyLimit: () => Promise<void>
-  addExpense: (data: ExpenseCreate) => Promise<Expense>
+  addExpense: (data: ExpenseCreatePayload) => Promise<Expense>
   reset: () => void
 }
 
@@ -36,7 +34,12 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
   fetchExpenses: async (date?: string) => {
     set({ isLoading: true, error: null })
     try {
-      const expenses = await getExpenses(date)
+      let expenses = await getExpenses()
+      if (date) {
+        expenses = expenses.filter(
+          (exp) => exp.date && exp.date.startsWith(date)
+        )
+      }
       set({ expenses, isLoading: false })
     } catch (error: any) {
       set({
@@ -49,7 +52,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
   fetchExpensesByCycle: async (cycleId: number) => {
     set({ isLoading: true, error: null })
     try {
-      const expenses = await getExpensesByCycle(cycleId)
+      const expenses = await getExpenses({ cycle: cycleId })
       set({ expenses, isLoading: false })
     } catch (error: any) {
       set({
@@ -62,7 +65,11 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
   fetchTodayExpenses: async () => {
     set({ isLoading: true, error: null })
     try {
-      const todayExpenses = await getTodayExpenses()
+      const expenses = await getExpenses()
+      const todayStr = new Date().toISOString().split("T")[0]
+      const todayExpenses = expenses.filter(
+        (exp) => exp.date && exp.date.startsWith(todayStr)
+      )
       set({ todayExpenses, isLoading: false })
     } catch (error: any) {
       set({
@@ -90,7 +97,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     }
   },
 
-  addExpense: async (data: ExpenseCreate) => {
+  addExpense: async (data: ExpenseCreatePayload) => {
     set({ isLoading: true, error: null })
     try {
       const response = await createExpense(data)

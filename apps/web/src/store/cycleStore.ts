@@ -1,150 +1,250 @@
-// Zustand store for monthly cycle and allocation
-
 import { create } from "zustand"
-import type { MonthCycle, AllocationLog, AllocationResult } from "@/types/cycle"
-import {
-  getCurrentCycle,
-  getAllocationLogs,
-  submitIncome,
-  submitInvestment,
-  getAllCycles,
-  resetCycleExpenses,
-} from "@/api/cycle"
+import { submitIncome, submitSurvivalDraw } from "../api/income"
+import { closeMonth } from "../api/networth"
+import type {
+  MonthCycle,
+  IncomePayload,
+  IncomeResponse,
+  SurvivalDrawResponse,
+  CycleState,
+  AccountProfile,
+} from "../types"
 
-interface CycleState {
-  currentCycle: MonthCycle | null
-  allocationLogs: AllocationLog[]
-  allCycles: MonthCycle[]
-  isLoading: boolean
-  error: string | null
-  lastAllocationResult: AllocationResult | null
+// ── Private helpers ───────────────────────────────────────────────────
+function _parseError(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const res = (error as any).response
+    if (typeof res?.data?.detail === "string") return res.data.detail
+    if (typeof res?.data?.error === "string") return res.data.error
+    if (res?.status === 400)
+      return res.data?.error ?? "Invalid request. Please check your input."
+    if (res?.status === 404) return "No active cycle found."
+  }
+  return "Something went wrong. Please try again."
+}
 
+// ── Store shape ───────────────────────────────────────────────────────
+interface CycleStore extends CycleState {
   // Actions
-  fetchCurrentCycle: () => Promise<void>
-  fetchAllocationLogs: (cycleId: number) => Promise<void>
-  fetchAllCycles: () => Promise<void>
-  addIncome: (amount: number) => Promise<AllocationResult>
-  moveToInvestments: (amount: number) => Promise<AllocationResult>
-  resetExpenses: () => Promise<void>
+  submitIncome: (payload: IncomePayload) => Promise<IncomeResponse>
+  confirmSurvivalDraw: () => Promise<SurvivalDrawResponse>
+  declineSurvivalDraw: () => void
+  closeMonth: () => Promise<void>
+  syncFromProfile: (profile: AccountProfile) => void
+
+  // Computed getters
+  hasActiveCycle: () => boolean
+  getNeedsRemaining: () => number
+  getWantsRemaining: () => number
+  getTotalSpent: () => number
+  getRemainingBudget: () => number
+  getNeedsProgress: () => number // 0-100 percentage
+  getWantsProgress: () => number // 0-100 percentage
+  getIncomeScenarioLabel: () => string
+
+  clearError: () => void
   reset: () => void
 }
 
-export const useCycleStore = create<CycleState>((set) => ({
-  currentCycle: null,
-  allocationLogs: [],
-  allCycles: [],
+// ── Initial state ─────────────────────────────────────────────────────
+const initialState = {
+  activeCycle: null as MonthCycle | null,
   isLoading: false,
-  error: null,
-  lastAllocationResult: null,
+  error: null as string | null,
+  survivalMode: false,
+  survivalPrompt: null as string | null,
+}
 
-  fetchCurrentCycle: async () => {
+// ── Store ─────────────────────────────────────────────────────────────
+export const useCycleStore = create<CycleStore>()((set, get) => ({
+  ...initialState,
+
+  // ── Async actions ──────────────────────────────────────────────────
+
+  submitIncome: async (payload: IncomePayload) => {
     set({ isLoading: true, error: null })
     try {
-      const cycle = await getCurrentCycle()
-      set({ currentCycle: cycle, isLoading: false })
-    } catch (error: any) {
-      // 404 is expected when no cycle exists yet - not an error
-      if (error.response?.status === 404) {
-        set({ currentCycle: null, isLoading: false })
+      const response = await submitIncome(payload)
+      set({ activeCycle: response.cycle })
+
+      if (response.survival_mode) {
+        set({
+          survivalMode: true,
+          survivalPrompt: response.survival_prompt ?? null,
+          isLoading: false,
+        })
       } else {
         set({
-          error: error.message || "Failed to fetch cycle",
+          survivalMode: false,
+          survivalPrompt: null,
           isLoading: false,
         })
       }
+
+      // Sync funds and net worth from profile
+      const { useFundStore } = await import("./fundStore")
+      useFundStore.getState().syncFromProfile(response.profile)
+
+      const { useNetWorthStore } = await import("./netWorthStore")
+      useNetWorthStore.getState().setCurrentNetWorth(response.profile.net_worth)
+
+      // Fetch fresh snapshots for chart update
+      await useNetWorthStore.getState().fetchSnapshots()
+
+      return response
+    } catch (error) {
+      set({ isLoading: false, error: _parseError(error) })
+      throw error
     }
   },
 
-  fetchAllocationLogs: async (cycleId: number) => {
+  confirmSurvivalDraw: async () => {
     set({ isLoading: true, error: null })
     try {
-      const logs = await getAllocationLogs(cycleId)
-      set({ allocationLogs: logs, isLoading: false })
-    } catch (error: any) {
-      set({ error: error.message || "Failed to fetch logs", isLoading: false })
-    }
-  },
-
-  fetchAllCycles: async () => {
-    set({ isLoading: true, error: null })
-    try {
-      const cycles = await getAllCycles()
-      set({ allCycles: cycles, isLoading: false })
-    } catch (error: any) {
+      const response = await submitSurvivalDraw()
       set({
-        error: error.message || "Failed to fetch cycles",
+        activeCycle: response.profile.active_cycle,
+        survivalMode: false,
+        survivalPrompt: null,
         isLoading: false,
       })
-    }
-  },
 
-  addIncome: async (amount: number) => {
-    set({ isLoading: true, error: null })
-    try {
-      const result = await submitIncome({ amount })
+      // Sync funds
+      const { useFundStore } = await import("./fundStore")
+      useFundStore.getState().syncFromProfile(response.profile)
+
+      // Sync net worth
+      const { useNetWorthStore } = await import("./netWorthStore")
+      useNetWorthStore.getState().setCurrentNetWorth(response.profile.net_worth)
+
+      // Add survival draw transfer
+      const { useTransferStore } = await import("./transferStore")
+      useTransferStore.getState().prependTransfer(response.transfer)
+
+      return response
+    } catch (error) {
       set({
-        currentCycle: result.cycle,
-        allocationLogs: result.logs,
-        lastAllocationResult: result,
         isLoading: false,
-      })
-      return result
-    } catch (error: any) {
-      set({
-        error: error.message || "Failed to submit income",
-        isLoading: false,
+        survivalMode: false,
+        survivalPrompt: null,
+        error: _parseError(error),
       })
       throw error
     }
   },
 
-  moveToInvestments: async (amount: number) => {
-    set({ isLoading: true, error: null })
-    try {
-      const result = await submitInvestment({ amount })
-      set({
-        currentCycle: result.cycle,
-        allocationLogs: [
-          ...useCycleStore.getState().allocationLogs,
-          ...result.logs,
-        ],
-        lastAllocationResult: result,
-        isLoading: false,
-      })
-      return result
-    } catch (error: any) {
-      set({
-        error: error.message || "Failed to move to investments",
-        isLoading: false,
-      })
-      throw error
-    }
-  },
-
-  resetExpenses: async () => {
-    set({ isLoading: true, error: null })
-    try {
-      await resetCycleExpenses()
-      // Refresh current cycle after reset
-      const cycle = await getCurrentCycle()
-      set({ currentCycle: cycle, isLoading: false })
-    } catch (error: any) {
-      set({
-        error: error.message || "Failed to reset expenses",
-        isLoading: false,
-      })
-      throw error
-    }
-  },
-
-  reset: () => {
+  declineSurvivalDraw: () => {
     set({
-      currentCycle: null,
-      allocationLogs: [],
-      allCycles: [],
-      isLoading: false,
-      error: null,
-      lastAllocationResult: null,
+      survivalMode: false,
+      survivalPrompt: null,
     })
   },
+
+  closeMonth: async () => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await closeMonth()
+
+      set({
+        activeCycle: null,
+        survivalMode: false,
+        survivalPrompt: null,
+        isLoading: false,
+      })
+
+      // Sync funds
+      const { useFundStore } = await import("./fundStore")
+      useFundStore.getState().syncFromProfile(response.profile)
+
+      // Update net worth and summary
+      const { useNetWorthStore } = await import("./netWorthStore")
+      const nwStore = useNetWorthStore.getState()
+      nwStore.setCurrentNetWorth(response.profile.net_worth)
+      nwStore.addSummary(response.summary)
+
+      // Fetch fresh snapshots
+      await nwStore.fetchSnapshots()
+
+      // Clear current cycle expenses
+      const { useExpenseStore } = await import("./expenseStore")
+      useExpenseStore.getState().reset()
+
+      // Clear alerts
+      const { useAlertStore } = await import("./alertStore")
+      useAlertStore.getState().reset()
+    } catch (error) {
+      set({ isLoading: false, error: _parseError(error) })
+      throw error
+    }
+  },
+
+  // ── Sync actions ──────────────────────────────────────────────────
+
+  syncFromProfile: (profile: AccountProfile) => {
+    if (profile.active_cycle !== undefined) {
+      set({ activeCycle: profile.active_cycle })
+    }
+  },
+
+  // ── Computed getters ───────────────────────────────────────────────
+
+  hasActiveCycle: () => get().activeCycle !== null,
+
+  getNeedsRemaining: () => {
+    const c = get().activeCycle
+    return c ? parseFloat(c.needs_remaining) : 0
+  },
+
+  getWantsRemaining: () => {
+    const c = get().activeCycle
+    return c ? parseFloat(c.wants_remaining) : 0
+  },
+
+  getTotalSpent: () => {
+    const c = get().activeCycle
+    return c ? parseFloat(c.total_spent) : 0
+  },
+
+  getRemainingBudget: () => {
+    const c = get().activeCycle
+    return c ? parseFloat(c.remaining_budget) : 0
+  },
+
+  getNeedsProgress: () => {
+    const c = get().activeCycle
+    if (!c) return 0
+    const budget = parseFloat(c.needs_budget_used)
+    if (budget <= 0) return 0
+    const spent = parseFloat(c.needs_spent)
+    return Math.min(100, Math.round((spent / budget) * 100))
+  },
+
+  getWantsProgress: () => {
+    const c = get().activeCycle
+    if (!c) return 0
+    const budget = parseFloat(c.wants_budget_used)
+    if (budget <= 0) return 0
+    const spent = parseFloat(c.wants_spent)
+    return Math.min(100, Math.round((spent / budget) * 100))
+  },
+
+  getIncomeScenarioLabel: () => {
+    const scenario = get().activeCycle?.income_scenario
+    switch (scenario) {
+      case "full":
+        return "Full income month"
+      case "low":
+        return "Low income month"
+      case "zero":
+        return "Zero income month"
+      default:
+        return ""
+    }
+  },
+
+  // ── Utilities ──────────────────────────────────────────────────────
+
+  clearError: () => set({ error: null }),
+  
+  reset: () => set(initialState),
 }))

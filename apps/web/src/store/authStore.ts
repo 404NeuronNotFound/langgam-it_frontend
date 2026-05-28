@@ -1,175 +1,222 @@
-// store/authStore.ts
+// src/store/authStore.ts
 //
-// Zustand store managing authentication state.
-// Persists access_token and refresh_token to localStorage
-// so the user stays logged in across page refreshes.
+// Authentication store — manages user, JWT tokens,
+// login, logout, and app boot hydration.
+//
+// Boot sequence:
+//   1. App.tsx mounts
+//   2. hydrateUser() called
+//   3. If token exists → GET /api/auth/me/ → set user
+//   4. accountStore.fetchSetupStatus() called next
+//   5. Route guard checks isAuthenticated + setup_complete
 
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
-import { AxiosError } from "axios"
-
+import { persist, createJSONStorage } from "zustand/middleware"
 import {
   login as apiLogin,
-  logoutCleanup,
+  register as apiRegister,
   getMe,
-  updateProfile as apiUpdateProfile,
-  changePassword as apiChangePassword,
+  logout as apiLogout,
 } from "../api/auth"
+import {
+  REFRESH_TOKEN_KEY,
+  setAccessToken,
+  setRefreshToken,
+  clearTokens,
+  getAccessToken,
+} from "../api/client"
 import type {
+  User,
   AuthState,
   LoginPayload,
-  APIError,
-  User,
-  UpdateProfilePayload,
-  ChangePasswordPayload,
-} from "../types/auth"
+  RegisterPayload,
+} from "../types"
 
-// ── Helper: extract a readable error message from DRF errors ──────
-function parseError(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const data = error.response?.data as APIError | undefined
-    if (!data) return "Network error. Please try again."
-
-    // DRF returns { detail: "..." } for generic errors (e.g. bad credentials)
-    if (data.detail) return data.detail
-
-    // Field-level errors: { username: ["already taken"], email: ["..."] }
-    const fieldErrors = Object.entries(data)
-      .map(([field, messages]) => {
-        const msg = Array.isArray(messages) ? messages[0] : messages
-        return `${field}: ${msg}`
-      })
-      .join(" ")
-
-    return fieldErrors || "Something went wrong."
+// ── Private helpers ───────────────────────────────────────────────────
+function _parseError(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const response = (error as any).response
+    if (response?.data) {
+      const data = response.data
+      // DRF returns errors as { detail: "..." }
+      // or { field: ["error msg"] } for validation errors
+      if (typeof data.detail === "string") return data.detail
+      // Join field errors for login/register
+      const messages = Object.values(data)
+        .flat()
+        .filter((v): v is string => typeof v === "string")
+      if (messages.length > 0) return messages[0]
+    }
+    if (response?.status === 401) return "Invalid username or password."
+    if (response?.status === 400) return "Please check your input and try again."
   }
-  return "Unexpected error. Please try again."
+  return "Something went wrong. Please try again."
 }
 
-// ── Store actions interface ───────────────────────────────────────
-interface AuthActions {
-  login: (payload: LoginPayload) => Promise<void>
-  logout: () => void
-  hydrateUser: () => Promise<void>
-  updateProfile: (payload: UpdateProfilePayload) => Promise<void>
-  changePassword: (payload: ChangePasswordPayload) => Promise<void>
-  clearError: () => void
+interface AuthStore extends AuthState {
+  login:        (payload: LoginPayload) => Promise<void>
+  register:     (payload: RegisterPayload) => Promise<{ message: string; user: User }>
+  logout:       () => void
+  hydrateUser:  () => Promise<void>
+  clearError:   () => void
+  setTokens:    (access: string, refresh: string) => void
 }
 
-// ── Zustand store ─────────────────────────────────────────────────
-export const useAuthStore = create<AuthState & AuthActions>()(
+// ── Store ─────────────────────────────────────────────────────────────
+export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
-      // ── Initial state ──────────────────────────────────────────
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
+    (set) => ({
 
-      // ── Login ──────────────────────────────────────────────────
+      // ── Initial state ──────────────────────────────────────────────
+      user:            null,
+      accessToken:     null,
+      refreshToken:    null,
+      isAuthenticated: false,
+      isLoading:       false,
+      error:           null,
+
+      // ── Actions ────────────────────────────────────────────────────
       login: async (payload: LoginPayload) => {
         set({ isLoading: true, error: null })
+
         try {
           const data = await apiLogin(payload)
-
-          // Persist tokens to localStorage so the axios interceptor can read them
-          localStorage.setItem("access_token", data.access)
-          localStorage.setItem("refresh_token", data.refresh)
+          // Store tokens in localStorage via client helpers
+          setAccessToken(data.access)
+          setRefreshToken(data.refresh)
 
           set({
-            user: data.user,
-            accessToken: data.access,
-            refreshToken: data.refresh,
+            user:            data.user,
+            accessToken:     data.access,
+            refreshToken:    data.refresh,
             isAuthenticated: true,
-            isLoading: false,
-            error: null,
+            isLoading:       false,
+            error:           null,
           })
         } catch (error) {
           set({
-            isLoading: false,
+            isLoading:       false,
             isAuthenticated: false,
-            error: parseError(error),
+            error:           _parseError(error),
           })
-          throw error // re-throw so the form can react if needed
+          throw error
         }
       },
 
-      // ── Logout ─────────────────────────────────────────────────
-      logout: () => {
-        logoutCleanup()
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-          error: null,
-        })
-      },
-
-      // ── Hydrate user on app boot ───────────────────────────────
-      // Call this in your root layout / App.tsx on mount.
-      // If a valid access token exists it fetches the latest user data.
-      hydrateUser: async () => {
-        const { accessToken } = get()
-        if (!accessToken) return
+      register: async (payload: RegisterPayload) => {
+        set({ isLoading: true, error: null })
 
         try {
-          const user: User = await getMe()
-          set({ user, isAuthenticated: true })
-        } catch {
-          // Token is expired or invalid — clean up
-          logoutCleanup()
+          const data = await apiRegister(payload)
+          set({ isLoading: false, error: null })
+          return data
+        } catch (error) {
           set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
+            isLoading: false,
+            error:     _parseError(error),
+          })
+          throw error
+        }
+      },
+
+      logout: () => {
+        // 1. Clear localStorage tokens via client helper
+        apiLogout() // calls clearTokens() from client.ts
+
+        // 2. Clear all auth state in Zustand
+        set({
+          user:            null,
+          accessToken:     null,
+          refreshToken:    null,
+          isAuthenticated: false,
+          isLoading:       false,
+          error:           null,
+        })
+
+        // 3. Clear other stores — lazy import to avoid circular deps
+        //    Each store exposes a reset() action
+        import("./accountStore").then(({ useAccountStore }) =>
+          useAccountStore.getState().reset()
+        ).catch(() => {})
+        import("./fundStore").then(({ useFundStore }) =>
+          useFundStore.getState().reset()
+        ).catch(() => {})
+        import("./cycleStore").then(({ useCycleStore }) =>
+          useCycleStore.getState().reset()
+        ).catch(() => {})
+        import("./expenseStore").then(({ useExpenseStore }) =>
+          useExpenseStore.getState().reset()
+        ).catch(() => {})
+        import("./alertStore").then(({ useAlertStore }) =>
+          useAlertStore.getState().reset()
+        ).catch(() => {})
+        import("./transferStore").then(({ useTransferStore }) =>
+          useTransferStore.getState().reset()
+        ).catch(() => {})
+        import("./netWorthStore").then(({ useNetWorthStore }) =>
+          useNetWorthStore.getState().reset()
+        ).catch(() => {})
+        import("./budgetStore").then(({ useBudgetStore }) =>
+          useBudgetStore.getState().reset()
+        ).catch(() => {})
+      },
+
+      hydrateUser: async () => {
+        const accessToken = getAccessToken()
+
+        if (!accessToken) {
+          // No token — user is not logged in
+          set({
             isAuthenticated: false,
+            isLoading:       false,
+          })
+          return
+        }
+
+        // Token exists — try to get fresh user data
+        set({ isLoading: true })
+
+        try {
+          const user = await getMe()
+          set({
+            user:            user,
+            accessToken:     accessToken,
+            refreshToken:    localStorage.getItem(REFRESH_TOKEN_KEY),
+            isAuthenticated: true,
+            isLoading:       false,
+            error:           null,
+          })
+        } catch (error) {
+          // Token is invalid or expired and refresh failed
+          // (interceptor already tried to refresh before this threw)
+          clearTokens()
+          set({
+            user:            null,
+            accessToken:     null,
+            refreshToken:    null,
+            isAuthenticated: false,
+            isLoading:       false,
+            error:           null,
           })
         }
       },
 
-      // ── Clear error ────────────────────────────────────────────
+      setTokens: (access: string, refresh: string) => {
+        setAccessToken(access)
+        setRefreshToken(refresh)
+        set({ accessToken: access, refreshToken: refresh })
+      },
+
       clearError: () => set({ error: null }),
 
-      // ── Update profile ────────────────────────────────────────
-      updateProfile: async (payload: UpdateProfilePayload) => {
-        set({ isLoading: true, error: null })
-        try {
-          const updatedUser = await apiUpdateProfile(payload)
-          set({ user: updatedUser, isLoading: false })
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: parseError(error),
-          })
-          throw error
-        }
-      },
-
-      // ── Change password ───────────────────────────────────────
-      changePassword: async (payload: ChangePasswordPayload) => {
-        set({ isLoading: true, error: null })
-        try {
-          await apiChangePassword(payload)
-          set({ isLoading: false })
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: parseError(error),
-          })
-          throw error
-        }
-      },
     }),
     {
-      name: "langgam-it-auth", // localStorage key
+      name: "langgam-auth",
+      storage: createJSONStorage(() => localStorage),
+      // Only persist the token strings and auth flag
       partialize: (state) => ({
-        // only persist tokens + user, not UI state
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        user: state.user,
+        accessToken:     state.accessToken,
+        refreshToken:    state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

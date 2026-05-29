@@ -1,76 +1,182 @@
-// Zustand store for alerts
-
 import { create } from "zustand"
-import type { Alert } from "@/types"
-import { getAlerts, markAlertRead } from "@/api/alerts"
+import {
+  getAlerts,
+  markAlertRead,
+} from "../api/alerts"
+import type {
+  Alert,
+  AlertState,
+  AlertType,
+} from "../types"
 
-interface AlertState {
-  alerts: Alert[]
-  unreadCount: number
-  isLoading: boolean
-  error: string | null
+// ── Private helpers ───────────────────────────────────────────────────
+function _parseError(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const res = (error as any).response
+    if (typeof res?.data?.detail === "string") return res.data.detail
+    if (typeof res?.data?.error === "string") return res.data.error
+    if (res?.status === 404) return "Alert not found."
+  }
+  return "Something went wrong. Please try again."
+}
 
+// ── Store shape ───────────────────────────────────────────────────────
+interface AlertStore extends AlertState {
   // Actions
   fetchAlerts: () => Promise<void>
-  markAsRead: (alertId: number) => Promise<void>
-  dismissAlert: (alertId: number) => void
+  fetchAllAlerts: () => Promise<void>
+  markRead: (id: number) => Promise<void>
+  markAllRead: () => Promise<void>
+  addAlerts: (newAlerts: Alert[]) => void
+
+  // Computed getters
+  getUnreadAlerts: () => Alert[]
+  getAlertsByType: (type: AlertType) => Alert[]
+  hasUnread: () => boolean
+  getUnreadCountCapped: () => string
+  getLatestUnread: () => Alert | null
+  getLatestUnreadByType: (type: AlertType) => Alert | null
+
+  clearError: () => void
   reset: () => void
 }
 
-export const useAlertStore = create<AlertState>((set) => ({
-  alerts: [],
+// ── Initial state ─────────────────────────────────────────────────────
+const initialState = {
+  alerts: [] as Alert[],
   unreadCount: 0,
   isLoading: false,
-  error: null,
+  error: null as string | null,
+}
+
+// ── Store ─────────────────────────────────────────────────────────────
+export const useAlertStore = create<AlertStore>()((set, get) => ({
+  ...initialState,
+
+  // ── Async actions ──────────────────────────────────────────────────
 
   fetchAlerts: async () => {
     set({ isLoading: true, error: null })
     try {
       const alerts = await getAlerts()
-      const unreadCount = alerts.filter((a) => !a.is_read).length
-      set({ alerts, unreadCount, isLoading: false })
-    } catch (error: any) {
       set({
-        error: error.message || "Failed to fetch alerts",
+        alerts,
+        unreadCount: alerts.filter((a) => !a.is_read).length,
         isLoading: false,
       })
+    } catch (error) {
+      set({ isLoading: false, error: _parseError(error) })
     }
   },
 
-  markAsRead: async (alertId: number) => {
+  fetchAllAlerts: async () => {
+    set({ isLoading: true, error: null })
     try {
-      const updatedAlert = await markAlertRead(alertId)
-      set((state) => ({
-        alerts: state.alerts.map((alert) =>
-          alert.id === alertId ? updatedAlert : alert
-        ),
-        unreadCount: Math.max(0, state.unreadCount - 1),
-      }))
-    } catch (error: any) {
-      set({ error: error.message || "Failed to mark alert as read" })
+      const alerts = await getAlerts({ all: true })
+      set({
+        alerts,
+        unreadCount: alerts.filter((a) => !a.is_read).length,
+        isLoading: false,
+      })
+    } catch (error) {
+      set({ isLoading: false, error: _parseError(error) })
     }
   },
 
-  dismissAlert: (alertId: number) => {
-    set((state) => {
-      const alert = state.alerts.find((a) => a.id === alertId)
-      const wasUnread = alert && !alert.is_read
+  markRead: async (id: number) => {
+    try {
+      const updated = await markAlertRead(id)
+      set((state) => {
+        const alerts = state.alerts.map((a) => (a.id === id ? updated : a))
+        return {
+          alerts,
+          unreadCount: alerts.filter((a) => !a.is_read).length,
+        }
+      })
+    } catch (error) {
+      // Non-fatal — markRead fails silently
+    }
+  },
 
+  markAllRead: async () => {
+    set({ isLoading: true })
+    const unread = get().alerts.filter((a) => !a.is_read)
+    try {
+      const results = await Promise.allSettled(
+        unread.map((a) => markAlertRead(a.id))
+      )
+
+      // Collect successfully updated alerts
+      const updatedMap = new Map<number, Alert>()
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          updatedMap.set(result.value.id, result.value)
+        }
+      })
+
+      set((state) => {
+        const alerts = state.alerts.map((a) =>
+          updatedMap.has(a.id) ? updatedMap.get(a.id)! : a
+        )
+        return {
+          alerts,
+          unreadCount: alerts.filter((a) => !a.is_read).length,
+          isLoading: false,
+        }
+      })
+    } catch (error) {
+      set({ isLoading: false, error: _parseError(error) })
+    }
+  },
+
+  // ── Sync actions ──────────────────────────────────────────────────
+
+  addAlerts: (newAlerts: Alert[]) => {
+    if (newAlerts.length === 0) return
+
+    set((state) => {
+      const existingIds = new Set(state.alerts.map((a) => a.id))
+      const fresh = newAlerts.filter((a) => !existingIds.has(a.id))
+
+      if (fresh.length === 0) return state
+
+      const alerts = [...fresh, ...state.alerts]
       return {
-        alerts: state.alerts.filter((a) => a.id !== alertId),
-        unreadCount: wasUnread
-          ? Math.max(0, state.unreadCount - 1)
-          : state.unreadCount,
+        alerts,
+        unreadCount: alerts.filter((a) => !a.is_read).length,
       }
     })
   },
 
-  reset: () => {
-    set({
-      alerts: [],
-      unreadCount: 0,
-      isLoading: false,
-      error: null,
-    })
+  // ── Computed getters ───────────────────────────────────────────────
+
+  getUnreadAlerts: () => get().alerts.filter((a) => !a.is_read),
+
+  getAlertsByType: (type: AlertType) =>
+    get().alerts.filter((a) => a.type === type),
+
+  hasUnread: () => get().unreadCount > 0,
+
+  getUnreadCountCapped: () => {
+    const count = get().unreadCount
+    if (count === 0) return ""
+    if (count > 9) return "9+"
+    return String(count)
   },
+
+  getLatestUnread: () => {
+    const unread = get().alerts.filter((a) => !a.is_read)
+    return unread.length > 0 ? unread[0] : null
+  },
+
+  getLatestUnreadByType: (type: AlertType) => {
+    const unread = get().alerts.filter((a) => !a.is_read && a.type === type)
+    return unread.length > 0 ? unread[0] : null
+  },
+
+  // ── Utilities ──────────────────────────────────────────────────────
+
+  clearError: () => set({ error: null }),
+  
+  reset: () => set(initialState),
 }))

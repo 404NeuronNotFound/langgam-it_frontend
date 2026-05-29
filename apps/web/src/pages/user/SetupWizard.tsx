@@ -154,6 +154,10 @@ export default function SetupWizard() {
     }
   }
 
+  async function handleScreen2Continue() {
+    setCurrentScreen(3)
+  }
+
   async function handleScreen3Submit(e: React.FormEvent) {
     e.preventDefault()
     setIsSubmitting(true)

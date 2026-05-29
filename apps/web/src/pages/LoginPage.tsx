@@ -3,12 +3,21 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../store/authStore"
+import { useAccountStore } from "../store/accountStore"
 
 export default function LoginPage() {
   const navigate = useNavigate()
 
   // ── Store ────────────────────────────────────────────────────────
-  const { login, isLoading, error, clearError } = useAuthStore()
+  const {
+    login,
+    isLoading,
+    error,
+    isAuthenticated,
+    clearError,
+  } = useAuthStore()
+
+  const { fetchSetupStatus } = useAccountStore()
 
   // ── Local form state ─────────────────────────────────────────────
   const [username, setUsername] = useState<string>("")
@@ -16,16 +25,26 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [remember, setRemember] = useState<boolean>(false)
 
-  // Redirect if already authenticated
-  // useEffect(() => {
-  //   if (isAuthenticated) navigate("/dashboard", { replace: true });
-  // }, [isAuthenticated, navigate]);
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      _handlePostLoginRedirect()
+    }
+  }, [isAuthenticated])
 
   // Clear any lingering store error when the user starts typing again
   useEffect(() => {
     if (error) clearError()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, password])
+
+  async function _handlePostLoginRedirect() {
+    const status = await fetchSetupStatus()
+    if (status.setup_complete) {
+      navigate("/dashboard", { replace: true })
+    } else {
+      navigate("/setup", { replace: true })
+    }
+  }
 
   // ── Submit ────────────────────────────────────────────────────────
   async function handleSignIn(e: React.FormEvent) {
@@ -33,9 +52,9 @@ export default function LoginPage() {
     if (!username.trim() || !password) return
     try {
       await login({ username: username.trim(), password })
-      navigate("/dashboard", { replace: true }) // ← add this line
+      await _handlePostLoginRedirect()
     } catch {
-      // error already set in store
+      // error is set in authStore — displayed in JSX
     }
   }
 
@@ -444,7 +463,7 @@ export default function LoginPage() {
                   </span>
                   <input
                     id="li-username"
-                    className={`li-input${error ? "li-input-has-error" : ""}`}
+                    className={`li-input${error ? " li-input-has-error" : ""}`}
                     type="text"
                     placeholder="yourhandle"
                     autoComplete="username"
@@ -471,7 +490,7 @@ export default function LoginPage() {
                   </span>
                   <input
                     id="li-password"
-                    className={`li-input${error ? "li-input-has-error" : ""}`}
+                    className={`li-input${error ? " li-input-has-error" : ""}`}
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     autoComplete="current-password"

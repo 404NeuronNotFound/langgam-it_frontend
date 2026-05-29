@@ -1,145 +1,114 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { useRegisterStore } from "../store/registerStore"
+import { useNavigate, Link } from "react-router-dom"
 import { useAuthStore } from "../store/authStore"
-
-interface FormState {
-  username: string
-  first_name: string
-  last_name: string
-  email: string
-  password: string
-  confirm_password: string
-}
-
-interface FormErrors {
-  username?: string
-  first_name?: string
-  last_name?: string
-  email?: string
-  password?: string
-  confirm_password?: string
-}
+import type { RegisterPayload } from "../types"
 
 export default function RegisterPage() {
   const navigate = useNavigate()
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const { register, isLoading, error, clearError } = useAuthStore()
 
-  // ── only need register, isLoading, error, clearError ─────────────
-  // isSuccess / resetSuccess removed — success is handled imperatively
-  const { register, isLoading, error, clearError } = useRegisterStore()
-
-  const [form, setForm] = useState<FormState>({
-    username: "",
-    first_name: "",
-    last_name: "",
-    email: "",
-    password: "",
+  const [form, setForm] = useState<RegisterPayload>({
+    first_name:       "",
+    last_name:        "",
+    email:            "",
+    username:         "",
+    password:         "",
     confirm_password: "",
   })
 
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [showPassword, setShowPassword] = useState<boolean>(false)
-  const [showConfirm, setShowConfirm] = useState<boolean>(false)
-  const [agreed, setAgreed] = useState<boolean>(false)
-  const [showSuccess, setShowSuccess] = useState<boolean>(false)
+  const [showPassword,        setShowPassword]        = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [fieldErrors,         setFieldErrors]         = useState<Partial<Record<keyof RegisterPayload, string>>>({})
+  const [touched,             setTouched]             = useState<Set<string>>(new Set())
+  const [isSuccess,           setIsSuccess]           = useState(false)
+  const [successName,         setSuccessName]         = useState("")
 
-  // Already logged in → go to dashboard
-  useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true })
-  }, [isAuthenticated, navigate])
-
-  // Clear store error when user edits any field
+  // Clear server error when user types in key fields
   useEffect(() => {
     if (error) clearError()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form])
+  }, [form.username, form.email, form.password])
+
+  // Auto-redirect after success
+  useEffect(() => {
+    if (!isSuccess) return
+    const timer = setTimeout(() => navigate("/"), 2000)
+    return () => clearTimeout(timer)
+  }, [isSuccess])
 
   function validate(): boolean {
-    const next: FormErrors = {}
-    if (!form.username.trim()) next.username = "Username is required."
-    if (!form.first_name.trim()) next.first_name = "First name is required."
-    if (!form.last_name.trim()) next.last_name = "Last name is required."
-    if (!form.email.trim()) next.email = "Email is required."
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      next.email = "Enter a valid email."
-    if (!form.password) next.password = "Password is required."
-    else if (form.password.length < 8) next.password = "At least 8 characters."
-    if (!form.confirm_password)
-      next.confirm_password = "Please confirm your password."
-    else if (form.password !== form.confirm_password)
-      next.confirm_password = "Passwords do not match."
-    setErrors(next)
-    return Object.keys(next).length === 0
+    const errs: Partial<Record<keyof RegisterPayload, string>> = {}
+
+    if (!form.first_name.trim())
+      errs.first_name = "First name is required."
+
+    if (!form.last_name.trim())
+      errs.last_name = "Last name is required."
+
+    if (!form.email.trim()) {
+      errs.email = "Email is required."
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errs.email = "Enter a valid email address."
+    }
+
+    if (!form.username.trim()) {
+      errs.username = "Username is required."
+    } else if (form.username.trim().length < 3) {
+      errs.username = "Username must be at least 3 characters."
+    } else if (/\s/.test(form.username)) {
+      errs.username = "Username cannot contain spaces."
+    }
+
+    if (!form.password) {
+      errs.password = "Password is required."
+    } else if (form.password.length < 8) {
+      errs.password = "Password must be at least 8 characters."
+    }
+
+    if (!form.confirm_password) {
+      errs.confirm_password = "Please confirm your password."
+    } else if (form.password !== form.confirm_password) {
+      errs.confirm_password = "Passwords do not match."
+    }
+
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }))
+    // Clear field error as user corrects it
+    if (fieldErrors[name as keyof RegisterPayload]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: undefined }))
     }
   }
 
-  // ── THE FIX: no useEffect, no isSuccess flag ──────────────────────
-  // await register() only resolves without throwing on a 201 success.
-  // So everything after it is guaranteed to run only on success.
+  function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
+    setTouched((prev) => new Set(prev).add(e.target.name))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Mark all fields as touched on submit
+    setTouched(new Set(Object.keys(form)))
+
     if (!validate()) return
+
     try {
-      await register(form)
-      setShowSuccess(true) // flip to success screen
-      setTimeout(() => navigate("/", { replace: true }), 2600) // then go to login
+      const result = await register(form)
+      setSuccessName(result.user.first_name || result.user.username)
+      setIsSuccess(true)
     } catch {
-      // error is already set in the store and shown in the banner above the form
+      // error is set in authStore — displayed in JSX
     }
   }
 
-  // ── Success screen ───────────────────────────────────────────────
-  if (showSuccess) {
-    return (
-      <>
-        <style>
-          {SHARED_STYLES}
-          {SUCCESS_STYLES}
-        </style>
-        <div className="su-root">
-          <div className="su-card">
-            <div className="su-logo-wrap">
-              <div className="su-logo-mark">
-                <LogoIcon color="var(--text-1)" />
-              </div>
-              <span className="su-logo-name">Langgam-It</span>
-            </div>
-            <div className="su-icon-ring">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--green-icon)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <h2 className="su-title">Account created!</h2>
-            <p className="su-sub">Taking you to sign in…</p>
-            <div className="su-bar-track">
-              <div className="su-bar-fill" />
-            </div>
-          </div>
-        </div>
-      </>
-    )
+  if (isSuccess) {
+    return <SuccessScreen name={successName} onGoToLogin={() => navigate("/")} />
   }
 
-  // ── Register form ────────────────────────────────────────────────
   return (
     <>
       <style>
@@ -230,17 +199,19 @@ export default function RegisterPage() {
                   </span>
                   <input
                     id="rg-username"
-                    className={`rg-input${errors.username ? "rg-input-error" : ""}`}
+                    className={`rg-input${touched.has("username") && fieldErrors.username ? " rg-input-error" : ""}`}
                     type="text"
                     name="username"
                     placeholder="yourhandle"
                     autoComplete="username"
                     value={form.username}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={isLoading}
                   />
                 </div>
-                {errors.username && (
-                  <span className="rg-error-msg">{errors.username}</span>
+                {touched.has("username") && fieldErrors.username && (
+                  <span className="rg-error-msg">{fieldErrors.username}</span>
                 )}
               </div>
 
@@ -256,17 +227,20 @@ export default function RegisterPage() {
                     </span>
                     <input
                       id="rg-first"
-                      className={`rg-input${errors.first_name ? "rg-input-error" : ""}`}
+                      className={`rg-input${touched.has("first_name") && fieldErrors.first_name ? " rg-input-error" : ""}`}
                       type="text"
                       name="first_name"
                       placeholder="Juan"
                       autoComplete="given-name"
                       value={form.first_name}
                       onChange={handleChange}
+                      onBlur={handleBlur}
+                      autoFocus
+                      disabled={isLoading}
                     />
                   </div>
-                  {errors.first_name && (
-                    <span className="rg-error-msg">{errors.first_name}</span>
+                  {touched.has("first_name") && fieldErrors.first_name && (
+                    <span className="rg-error-msg">{fieldErrors.first_name}</span>
                   )}
                 </div>
                 <div className="rg-field">
@@ -279,17 +253,19 @@ export default function RegisterPage() {
                     </span>
                     <input
                       id="rg-last"
-                      className={`rg-input${errors.last_name ? "rg-input-error" : ""}`}
+                      className={`rg-input${touched.has("last_name") && fieldErrors.last_name ? " rg-input-error" : ""}`}
                       type="text"
                       name="last_name"
                       placeholder="dela Cruz"
                       autoComplete="family-name"
                       value={form.last_name}
                       onChange={handleChange}
+                      onBlur={handleBlur}
+                      disabled={isLoading}
                     />
                   </div>
-                  {errors.last_name && (
-                    <span className="rg-error-msg">{errors.last_name}</span>
+                  {touched.has("last_name") && fieldErrors.last_name && (
+                    <span className="rg-error-msg">{fieldErrors.last_name}</span>
                   )}
                 </div>
               </div>
@@ -305,17 +281,19 @@ export default function RegisterPage() {
                   </span>
                   <input
                     id="rg-email"
-                    className={`rg-input${errors.email ? "rg-input-error" : ""}`}
+                    className={`rg-input${touched.has("email") && fieldErrors.email ? " rg-input-error" : ""}`}
                     type="email"
                     name="email"
                     placeholder="you@example.com"
                     autoComplete="email"
                     value={form.email}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={isLoading}
                   />
                 </div>
-                {errors.email && (
-                  <span className="rg-error-msg">{errors.email}</span>
+                {touched.has("email") && fieldErrors.email && (
+                  <span className="rg-error-msg">{fieldErrors.email}</span>
                 )}
               </div>
 
@@ -331,25 +309,28 @@ export default function RegisterPage() {
                     </span>
                     <input
                       id="rg-password"
-                      className={`rg-input rg-input-pw${errors.password ? "rg-input-error" : ""}`}
+                      className={`rg-input rg-input-pw${touched.has("password") && fieldErrors.password ? " rg-input-error" : ""}`}
                       type={showPassword ? "text" : "password"}
                       name="password"
                       placeholder="Min. 8 chars"
                       autoComplete="new-password"
                       value={form.password}
                       onChange={handleChange}
+                      onBlur={handleBlur}
+                      disabled={isLoading}
                     />
                     <button
                       type="button"
                       className="rg-eye"
                       aria-label={showPassword ? "Hide" : "Show"}
                       onClick={() => setShowPassword((v) => !v)}
+                      tabIndex={-1}
                     >
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   </div>
-                  {errors.password && (
-                    <span className="rg-error-msg">{errors.password}</span>
+                  {touched.has("password") && fieldErrors.password && (
+                    <span className="rg-error-msg">{fieldErrors.password}</span>
                   )}
                 </div>
                 <div className="rg-field">
@@ -362,58 +343,44 @@ export default function RegisterPage() {
                     </span>
                     <input
                       id="rg-confirm"
-                      className={`rg-input rg-input-pw${errors.confirm_password ? "rg-input-error" : ""}`}
-                      type={showConfirm ? "text" : "password"}
+                      className={`rg-input rg-input-pw${touched.has("confirm_password") && fieldErrors.confirm_password ? " rg-input-error" : ""}`}
+                      type={showConfirmPassword ? "text" : "password"}
                       name="confirm_password"
                       placeholder="Repeat password"
                       autoComplete="new-password"
                       value={form.confirm_password}
                       onChange={handleChange}
+                      onBlur={handleBlur}
+                      disabled={isLoading}
                     />
                     <button
                       type="button"
                       className="rg-eye"
-                      aria-label={showConfirm ? "Hide" : "Show"}
-                      onClick={() => setShowConfirm((v) => !v)}
+                      aria-label={showConfirmPassword ? "Hide" : "Show"}
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      tabIndex={-1}
                     >
-                      {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
+                      {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   </div>
-                  {errors.confirm_password && (
+                  {touched.has("confirm_password") && fieldErrors.confirm_password && (
                     <span className="rg-error-msg">
-                      {errors.confirm_password}
+                      {fieldErrors.confirm_password}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Terms */}
-              <div className="rg-terms">
-                <input
-                  id="rg-agree"
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                />
-                <label htmlFor="rg-agree" className="rg-terms-text">
-                  I agree to the{" "}
-                  <button type="button" className="rg-terms-link">
-                    Terms of Service
-                  </button>{" "}
-                  and{" "}
-                  <button type="button" className="rg-terms-link">
-                    Privacy Policy
-                  </button>
-                </label>
-              </div>
-
               <button
                 type="submit"
                 className="rg-btn-primary"
-                disabled={isLoading || !agreed}
+                disabled={isLoading}
               >
                 {isLoading ? (
-                  <span className="rg-spinner" />
+                  <>
+                    <span className="rg-spinner" />
+                    <span>Creating account…</span>
+                  </>
                 ) : (
                   <>
                     <span>Create account</span>
@@ -425,15 +392,61 @@ export default function RegisterPage() {
 
             <p className="rg-signin">
               Already have an account?{" "}
-              <button
-                type="button"
-                className="rg-signin-link"
-                onClick={() => navigate("/")}
-              >
+              <Link to="/" className="rg-signin-link">
                 Sign in
-              </button>
+              </Link>
             </p>
           </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Success Screen Component
+// ─────────────────────────────────────────────────────────────────────
+
+function SuccessScreen({
+  name,
+  onGoToLogin,
+}: {
+  name: string
+  onGoToLogin: () => void
+}) {
+  return (
+    <>
+      <style>
+        {SHARED_STYLES}
+        {SUCCESS_STYLES}
+      </style>
+      <div className="su-root">
+        <div className="su-card">
+          <div className="su-logo-wrap">
+            <div className="su-logo-mark">
+              <LogoIcon color="var(--text-1)" />
+            </div>
+            <span className="su-logo-name">Langgam-It</span>
+          </div>
+          <div className="su-icon-ring">
+            <CheckCircleIcon />
+          </div>
+          <h2 className="su-title">Account created!</h2>
+          <p className="su-sub">
+            Welcome to Langgam-It, {name}.
+            <br />
+            Redirecting to login in 2 seconds…
+          </p>
+          <div className="su-bar-track" style={{ marginBottom: "1.5rem" }}>
+            <div className="su-bar-fill" />
+          </div>
+          <button
+            className="rg-btn-primary"
+            style={{ margin: 0 }}
+            onClick={onGoToLogin}
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     </>
@@ -518,18 +531,14 @@ const FORM_STYLES = `
   .rg-input-error { border-color:var(--error) !important; box-shadow:0 0 0 3px rgba(153,60,29,0.08) !important; }
   .rg-error-msg { font-size:11px; color:var(--error); margin-top:2px; }
   .rg-eye { position:absolute; right:10px; background:none; border:none; cursor:pointer; color:var(--text-3); display:flex; align-items:center; padding:4px; }
-  .rg-terms { display:flex; align-items:flex-start; gap:9px; margin-bottom:18px; }
-  .rg-terms input[type="checkbox"] { width:15px; height:15px; margin-top:2px; cursor:pointer; flex-shrink:0; }
-  .rg-terms-text { font-size:12px; color:var(--text-2); line-height:1.6; }
-  .rg-terms-link { color:var(--text-1); font-weight:500; text-decoration:underline; cursor:pointer; background:none; border:none; font-family:var(--sans); font-size:12px; padding:0; }
   .rg-btn-primary { width:100%; height:42px; background:var(--text-1); color:var(--bg-card); border:none; border-radius:var(--radius-sm); font-family:var(--sans); font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity 0.15s,transform 0.1s; margin-bottom:18px; }
   .rg-btn-primary:hover { opacity:0.82; }
   .rg-btn-primary:active { transform:scale(0.99); }
   .rg-btn-primary:disabled { opacity:0.55; cursor:not-allowed; }
   .rg-spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:currentColor; border-radius:50%; animation:rg-spin 0.7s linear infinite; }
-  @keyframes rg-spin { to{transform:rotate(360deg)} }
   .rg-signin { text-align:center; font-size:13px; color:var(--text-2); }
   .rg-signin-link { color:var(--text-1); font-weight:500; text-decoration:underline; background:none; border:none; cursor:pointer; font-family:var(--sans); font-size:13px; padding:0; }
+  @keyframes rg-spin { to{transform:rotate(360deg)} }
   @media (max-width:680px) { .rg-left{display:none !important} .rg-right{padding:2rem 1.5rem} .rg-mobile-logo{display:flex !important} .rg-shell{border-radius:var(--radius-md)} }
   @media (max-width:480px) { .rg-right{padding:1.5rem 1.25rem} .rg-row{grid-template-columns:1fr;gap:0;margin-bottom:0} .rg-row .rg-field{margin-bottom:13px} }
 `
@@ -691,6 +700,23 @@ function ArrowRightIcon() {
       strokeLinejoin="round"
     >
       <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+  )
+}
+function CheckCircleIcon() {
+  return (
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--green-icon)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   )
 }

@@ -6,11 +6,9 @@ import { useAuthStore } from "../../store/authStore"
 import { useAccountStore } from "../../store/accountStore"
 import { useFundStore } from "../../store/fundStore"
 import { useBudgetStore } from "../../store/budgetStore"
-import type {
-  Fund,
-  FundCreatePayload,
-  MonthlyBudgetSetupPayload,
-} from "../../types"
+function getAccountNamedKey(userId: number | undefined): string | null {
+  return userId ? `langgam_setup_account_named_${userId}` : null
+}
 
 export default function SetupWizard() {
   const navigate = useNavigate()
@@ -46,28 +44,57 @@ export default function SetupWizard() {
 
   // Screen determination on mount
   useEffect(() => {
+    let cancelled = false
+
     async function init() {
       setIsInitializing(true)
-      await fundStore.fetchFunds()
-      const status = await accountStore.fetchSetupStatus()
+      setError(null)
+      try {
+        const accountActions = useAccountStore.getState()
+        const fundActions = useFundStore.getState()
 
-      if (status.setup_complete) {
-        navigate("/dashboard")
-        return
-      }
+        await accountActions.fetchAccount()
+        await fundActions.fetchFunds()
+        const status = await useAccountStore.getState().fetchSetupStatus()
 
-      const screen = accountStore.getFirstIncompleteScreen()
-      if (status.has_account) {
+        if (cancelled) return
+
+        if (status.setup_complete) {
+          navigate("/dashboard")
+          return
+        }
+
+        const latestAccount = useAccountStore.getState().account
+        const suggestedName = `${user?.first_name || user?.username || "My"}'s Finances`
+        const accountNamedKey = getAccountNamedKey(user?.id)
+        const accountNameConfirmed =
+          Boolean(accountNamedKey && localStorage.getItem(accountNamedKey)) ||
+          Boolean(latestAccount?.name && latestAccount.name !== suggestedName)
+
+        if (!accountNameConfirmed) {
+          setShowScreen1(true)
+          setCurrentScreen(2)
+          return
+        }
+
+        const screen = useAccountStore.getState().getFirstIncompleteScreen()
         setShowScreen1(false)
         setCurrentScreen(screen ?? 2)
-      } else {
+      } catch {
+        if (cancelled) return
+        setError("We couldn't load your setup yet. Please refresh and try again.")
         setShowScreen1(true)
         setCurrentScreen(2)
+      } finally {
+        if (!cancelled) setIsInitializing(false)
       }
-      setIsInitializing(false)
     }
+
     init()
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [navigate, user?.first_name, user?.id, user?.username])
 
   // Pre-fill account name from user
   useEffect(() => {
@@ -109,6 +136,10 @@ export default function SetupWizard() {
     setError(null)
     try {
       await accountStore.updateAccountName(accountName.trim())
+      const accountNamedKey = getAccountNamedKey(user?.id)
+      if (accountNamedKey) {
+        localStorage.setItem(accountNamedKey, "true")
+      }
       setShowScreen1(false)
     } catch (err: any) {
       setError(err?.message || "Failed to update financial account name.")
@@ -156,6 +187,14 @@ export default function SetupWizard() {
 
   async function handleScreen2Continue() {
     setCurrentScreen(3)
+  }
+
+  function handleChangeBalance(id: number, value: string) {
+    setBalances((prev) => ({ ...prev, [id]: value }))
+  }
+
+  function handleChangeAlloc(id: number, value: string) {
+    setFundAllocs((prev) => ({ ...prev, [id]: value }))
   }
 
   async function handleScreen3Submit(e: React.FormEvent) {
@@ -812,25 +851,6 @@ function LoadingScreen() {
   )
 }
 
-function SuccessScreen({ onGoToDashboard }: { onGoToDashboard: () => void }) {
-  return (
-    <>
-      <style>{PAGE_STYLES}</style>
-      <div className="wiz-root">
-        <div className="wiz-card" style={{ textAlign: "center", padding: "3rem 2rem" }}>
-          <h2 className="wiz-screen-title" style={{ marginBottom: "1rem" }}>Setup Completed!</h2>
-          <p style={{ marginBottom: "1.5rem", fontSize: 14, color: "var(--text-2)" }}>
-            Welcome to Langgam-It. Let's head to your dashboard.
-          </p>
-          <button className="wiz-btn-primary" onClick={onGoToDashboard}>
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    </>
-  )
-}
-
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -844,43 +864,6 @@ function formatCurrency(value: number): string {
 // ─────────────────────────────────────────────────────────────────────
 
 const FUND_ICONS = ["🎯", "✈️", "💻", "👗", "🏠", "⭐", "🚗", "📚", "🎮", "💊"]
-
-function LogoIcon({ color }: { color: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-      <path
-        d="M4 15L10 5L16 15"
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6.5 11H13.5"
-        stroke={color}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-function ArrowRightIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
-  )
-}
 
 // ─────────────────────────────────────────────────────────────────────
 // Styles

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { useAuthStore } from "./store/authStore"
-import { useFinanceStore } from "./store/financeStore"
+import { useAccountStore } from "./store/accountStore"
 import LoginPage from "./pages/LoginPage"
 import RegisterPage from "./pages/RegisterPage"
 import SettingsPage from "./pages/Settings"
@@ -20,16 +20,18 @@ import ReportsPage from "./pages/user/ReportsPage"
 // Redirects to setup if user hasn't completed it yet
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const { profile, fetchProfile, isSetupComplete } = useFinanceStore()
+  const setupStatus = useAccountStore((s) => s.setupStatus)
+  const fetchSetupStatus = useAccountStore((s) => s.fetchSetupStatus)
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    if (isAuthenticated && !profile) {
-      fetchProfile().finally(() => setIsChecking(false))
-    } else {
+    if (!isAuthenticated) {
       setIsChecking(false)
+      return
     }
-  }, [isAuthenticated, profile, fetchProfile])
+
+    fetchSetupStatus().finally(() => setIsChecking(false))
+  }, [isAuthenticated, fetchSetupStatus])
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />
@@ -41,7 +43,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!isSetupComplete()) {
+  if (!setupStatus?.setup_complete) {
     return <Navigate to="/setup" replace />
   }
 
@@ -52,16 +54,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Redirects to dashboard if setup is already complete
 function SetupRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const { profile, fetchProfile, isSetupComplete } = useFinanceStore()
+  const setupStatus = useAccountStore((s) => s.setupStatus)
+  const fetchSetupStatus = useAccountStore((s) => s.fetchSetupStatus)
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    if (isAuthenticated && !profile) {
-      fetchProfile().finally(() => setIsChecking(false))
-    } else {
+    if (!isAuthenticated) {
       setIsChecking(false)
+      return
     }
-  }, [isAuthenticated, profile, fetchProfile])
+
+    fetchSetupStatus().finally(() => setIsChecking(false))
+  }, [isAuthenticated, fetchSetupStatus])
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />
@@ -73,7 +77,7 @@ function SetupRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (isSetupComplete()) {
+  if (setupStatus?.setup_complete) {
     return <Navigate to="/dashboard" replace />
   }
 

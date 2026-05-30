@@ -10,6 +10,7 @@ import SettingsPage from "./pages/Settings"
 import Layout from "./layouts/Layout"
 import SetupWizard from "./pages/user/SetupWizard"
 import Dashboard from "./pages/user/Dashboard"
+import FundsPage from "./pages/user/FundsPage"
 import IncomePage from "./pages/user/IncomePage"
 import BudgetPage from "./pages/user/BudgetPage"
 import ExpensesPage from "./pages/user/ExpensesPage"
@@ -142,6 +143,7 @@ export default function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/funds" element={<FundsPage />} />
           <Route path="/income" element={<IncomePage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/investments" element={<InvestmentsPage />} />

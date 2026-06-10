@@ -1,14 +1,11 @@
 import { create } from "zustand"
 import {
   getNetWorthSnapshots,
-  closeMonth,
 } from "../api/networth"
-import type { CloseMonthResponse } from "../api/networth"
 import type {
   NetWorthSnapshot,
   MonthSummary,
   NetWorthState,
-  AccountProfile,
 } from "../types"
 
 // ── Local types ───────────────────────────────────────────────────────

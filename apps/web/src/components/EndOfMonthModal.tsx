@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useReportStore } from "../store/reportStore"
 import { useCycleStore } from "../store/cycleStore"
 import { useExpenseStore } from "../store/expenseStore"
 
@@ -15,11 +14,10 @@ export default function EndOfMonthModal({
   onClose,
 }: EndOfMonthModalProps) {
   const [isConfirming, setIsConfirming] = useState(false)
-  const { closeCurrentMonth } = useReportStore()
-  const { currentCycle, fetchCurrentCycle } = useCycleStore()
+  const { activeCycle, closeMonth } = useCycleStore()
   const { expenses } = useExpenseStore()
 
-  if (!isOpen || !currentCycle) return null
+  if (!isOpen || !activeCycle) return null
 
   function formatCurrency(val: number | string) {
     const num = typeof val === "string" ? parseFloat(val) : val
@@ -33,17 +31,19 @@ export default function EndOfMonthModal({
   async function handleConfirm() {
     setIsConfirming(true)
     try {
-      await closeCurrentMonth()
-      await fetchCurrentCycle()
+      await closeMonth()
       onClose()
-    } catch (error) {
-      console.error("Failed to close month:", error)
+    } catch {
+      // Store owns the error state.
     } finally {
       setIsConfirming(false)
     }
   }
 
-  const monthYear = new Date(currentCycle.month + "-01").toLocaleDateString(
+  const monthYear = new Date(
+    activeCycle.year,
+    activeCycle.month - 1
+  ).toLocaleDateString(
     "en-US",
     {
       month: "long",
@@ -53,7 +53,7 @@ export default function EndOfMonthModal({
 
   // Calculate spent amounts from expenses
   const currentCycleExpenses = expenses.filter(
-    (e) => e.cycle === currentCycle.id
+    (e) => e.cycle === activeCycle.id
   )
   const needsSpent = currentCycleExpenses
     .filter((e) => e.category === "needs")
@@ -62,8 +62,8 @@ export default function EndOfMonthModal({
     .filter((e) => e.category === "wants")
     .reduce((sum, e) => sum + parseFloat(e.amount), 0)
 
-  const needsRemaining = parseFloat(currentCycle.expenses_budget) - needsSpent
-  const wantsRemaining = parseFloat(currentCycle.wants_budget) - wantsSpent
+  const needsRemaining = parseFloat(activeCycle.needs_budget_used) - needsSpent
+  const wantsRemaining = parseFloat(activeCycle.wants_budget_used) - wantsSpent
   const unspentTotal = needsRemaining + wantsRemaining
 
   return (
@@ -88,7 +88,7 @@ export default function EndOfMonthModal({
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Total Income</span>
                 <span className="eom-stat-value">
-                  {formatCurrency(currentCycle.income)}
+                  {formatCurrency(activeCycle.income_entered)}
                 </span>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function EndOfMonthModal({
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Needs (Allocated)</span>
                 <span className="eom-stat-value">
-                  {formatCurrency(currentCycle.expenses_budget)}
+                  {formatCurrency(activeCycle.needs_budget_used)}
                 </span>
               </div>
               <div className="eom-stat-row">
@@ -120,7 +120,7 @@ export default function EndOfMonthModal({
               <div className="eom-stat-row">
                 <span className="eom-stat-label">Wants (Allocated)</span>
                 <span className="eom-stat-value">
-                  {formatCurrency(currentCycle.wants_budget)}
+                  {formatCurrency(activeCycle.wants_budget_used)}
                 </span>
               </div>
               <div className="eom-stat-row">

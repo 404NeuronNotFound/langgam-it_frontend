@@ -161,6 +161,7 @@ export const useTransferStore = create<TransferStore>()((set, get) => ({
 
   syncFromProfile: (profile: AccountProfile) => {
     // No-op for now
+    void profile
   },
 
   // ── Computed getters ───────────────────────────────────────────────

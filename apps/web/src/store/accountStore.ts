@@ -95,6 +95,12 @@ export const useAccountStore = create<AccountStore>()((set, get) => ({
     try {
       const status = await getSetupStatus()
       set({ setupStatus: status, isLoading: false })
+
+      if (status.active_cycle !== undefined) {
+        const { useCycleStore } = await import("./cycleStore")
+        useCycleStore.getState().syncFromProfile({ active_cycle: status.active_cycle } as any)
+      }
+
       return status
     } catch (error) {
       set({

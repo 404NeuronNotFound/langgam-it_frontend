@@ -284,6 +284,7 @@ interface SetupStatus {
   has_balances: boolean
   has_budget: boolean
   setup_complete: boolean
+  active_cycle?: MonthCycle | null
 }
 
 interface AllocationSuggestion {

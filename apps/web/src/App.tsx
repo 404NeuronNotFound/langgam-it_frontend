@@ -16,32 +16,36 @@ import BudgetPage from "./pages/user/BudgetPage"
 import ExpensesPage from "./pages/user/ExpensesPage"
 import InvestmentsPage from "./pages/user/InvestmentsPage"
 import ReportsPage from "./pages/user/ReportsPage"
+import TransferPage from "./pages/user/TransferPage"
 
 // ── Protected route with setup check ──────────────────────────────
 // Redirects to setup if user hasn't completed it yet
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isAuthLoading = useAuthStore((s) => s.isLoading)
   const setupStatus = useAccountStore((s) => s.setupStatus)
   const fetchSetupStatus = useAccountStore((s) => s.fetchSetupStatus)
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
+    if (isAuthLoading) return
+
     if (!isAuthenticated) {
       setIsChecking(false)
       return
     }
 
     fetchSetupStatus().finally(() => setIsChecking(false))
-  }, [isAuthenticated, fetchSetupStatus])
+  }, [isAuthenticated, isAuthLoading, fetchSetupStatus])
 
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />
-  }
-
-  if (isChecking) {
+  if (isAuthLoading || isChecking) {
     return (
       <div style={{ fontFamily: "system-ui", padding: "2rem" }}>Loading...</div>
     )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />
   }
 
   if (!setupStatus?.setup_complete) {
@@ -55,27 +59,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Redirects to dashboard if setup is already complete
 function SetupRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isAuthLoading = useAuthStore((s) => s.isLoading)
   const setupStatus = useAccountStore((s) => s.setupStatus)
   const fetchSetupStatus = useAccountStore((s) => s.fetchSetupStatus)
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
+    if (isAuthLoading) return
+
     if (!isAuthenticated) {
       setIsChecking(false)
       return
     }
 
     fetchSetupStatus().finally(() => setIsChecking(false))
-  }, [isAuthenticated, fetchSetupStatus])
+  }, [isAuthenticated, isAuthLoading, fetchSetupStatus])
 
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />
-  }
-
-  if (isChecking) {
+  if (isAuthLoading || isChecking) {
     return (
       <div style={{ fontFamily: "system-ui", padding: "2rem" }}>Loading...</div>
     )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />
   }
 
   if (setupStatus?.setup_complete) {
@@ -150,6 +157,7 @@ export default function App() {
           <Route path="/budget" element={<BudgetPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/transfer" element={<TransferPage />} />
         </Route>
 
         {/* Catch-all */}
